@@ -1,0 +1,329 @@
+---
+title: "Regression Battleship - Creating your Data"
+author: "Paige Stewart"
+output: 
+  html_document:
+    theme: cerulean
+    code_folding: hide
+---
+
+```{r message=FALSE, warning=FALSE}
+library(pander)
+library(tidyverse)
+library(GGally)
+```
+
+# {.tabset .tabset-pills}
+
+## Instructions 
+
+Using [Desmos](https://www.desmos.com/calculator), design a "true linear regression model" that is **2D-Drawable**, and follows all other **Regression Battleship Rules** (listed below), that is of the form 
+
+$$
+  Y_i = \beta_0 + \underbrace{\quad\quad\quad\ldots\quad\quad\quad}_\text{Your Model Goes Here} + \epsilon_i \quad \text{where} \ \epsilon_i \sim N(0, \sigma^2)
+$$ 
+
+Then, use a simulation in R and your linear regression model to obtain a sample of data saved as `rbdata.csv`. 
+
+Your sample of data will be given to other students and your teacher, but this Rmd file (which contains the secret on how you made your data) will remain hidden until after the competition is complete. Your teacher and two of your peers will use the sample of data your provide, `rbdata.csv`, to try to **guess** the **true linear regression model** you used to create the data. The goal is to hide your model well enough that no one can find it, while keeping the R-squared of your data as high as possible.
+
+### Official Rules {.tabset}
+
+#### Advanced Level Competition
+
+Competing in the *Advanced Level* will allow you the opportunity to earn full credit on the Regression Battleship portion of your grade in Math 425 (which is 15% of your Final Grade). However, if you compete at this level, you cannot ever discuss your actual model with your teacher. You can still ask for help from the TA, tutors, or other students that you are not competing against. And you can ask "vague" questions to your teacher as long as it doesn't give too much away about your model.
+
+There are five official rules your model must abide by. If you break any of the rules, you will be disqualified from winning the competition and a grade penalty will result.
+
+1. Your csv file `rbdata.csv` must contain **11 columns of data**.
+    * The first column must be your (1) y-variable (labeled as `y`).
+    * The other ten columns must be (10) x-variables (labeled as `x1`, `x2`, ... , `x10`). *Please use all lower-case letters.* It does not matter which x-variables you use in your model, and you don't need to use all 10 x-variables in your model.
+   
+<br/>
+    
+2. Your **y-variable** (or some transformation of the y-variable) must have been **created from a linear regression model** using only x-variables (or transformations of those x-variables) **from** within **your data set**.
+    * Be very careful with transformations. You must ensure that you do not break the rules of a linear regression if you choose to use transformations.
+    * If you choose transformations, only these functions are allowed when transforming X and Y variables: `1/Y^2`, `1/Y`, `log(Y)`, `sqrt(Y)`, `sqrt(sqrt(Y))`, `Y^2`, `Y^3`, `1/X^2`, `1/X`, `log(X)`, `sqrt(X)`, `sqrt(sqrt(X))`, `X^2`, `X^3`, `X^4`, and `X^5`. Don't forget to check Rule #3 carefully if you choose transformations.\
+
+    
+```{r}
+set.seed(121)
+
+n = 800
+
+a <- sample(c("square", "rectangle", "trapizoid", "paralleogram"), 400, replace=TRUE)
+b <- sample(c("circle", "triangle", "octagon", "pentagon", "star"), 400, replace= TRUE)
+
+x1 <- as.factor(sample(c(a,b), n, replace=FALSE)) # switch with da shapes for the green line
+x2 <- rexp(n, 10) # junk lol
+x3 <- sample(c(0,1), n, replace=TRUE) # junk's friend
+x4 <- sample(c(0,1,2,3,4), n, replace=TRUE) # the crazy lines 
+x5 <- runif(n, -0.5, 1) # THE x
+x6 <- sample(c(a,b), n, replace=FALSE) 
+x7 <- sample(c(a,b), n, replace=FALSE)
+x8 <- sample(c(0,1), n, replace=TRUE) # switch for the horizontal line
+x9 <- sample(c(a,b), n, replace=FALSE)
+x10 <- sample(c(a,b), n, replace=FALSE)
+x11 <- ifelse(x1 %in% c("square", "rectangle", "trapizoid", "paralleogram"), 1, 0) # goes with x1, what we are actually using
+
+# red line
+beta0 <- 0.25
+beta1 <- -1.6
+beta2 <- 0.1
+beta3 <- 1.8
+
+#green line
+beta4 <- 0
+beta5 <- 3.7
+beta6 <- 9.9
+beta7 <- -2.2
+beta8 <- -0.6
+beta9 <- -0.9
+
+beta10 <- 0
+beta11 <- 3.6
+beta12 <- 2.9
+beta13 <- 2.2
+beta14 <- -10
+
+
+sigma = 0.48
+
+epsilon_i <- rnorm(n, 0, sigma)
+
+# x5 is da base line
+
+y = beta0 + beta1*x5 + beta2*x5^2 + beta3*x5^3 + beta4*x11 + beta5*x5*x11 + beta6*x5^2*x11 + beta7*x5^3*x11 + beta8*x5^4*x11 + beta9*x5^5*x11 + beta10*x4 + beta11*x4*x5 + beta12*x4*x5*x8 + beta13*x4*x5^2 + beta14*x4*x5^3 + epsilon_i
+
+x3=ifelse(y>-15, 0, 1)
+
+# CHANGE X6 TO X11 to not give it away!!!
+rbdata <- data.frame(y,x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)
+
+battle <- lm(y ~ x5 + I(x5^2) + I(x5^3) + x11 + x5:x11 + I(x5^2):x11 + I(x5^3):x11 + I(x5^4):x11 + I(x5^5):x11 + x4 + x4:x5 + x4:x5:x8 + x4:I(x5^2) + x4:I(x5^3), data= rbdata)
+
+ship <- coef(battle)
+
+b0 <- ship[1]
+b1 <- ship[2]
+b2 <- ship[3]
+b3 <- ship[4]
+b4 <- ship[5]
+b5 <- ship[6]
+b6 <- ship[7]
+b7 <- ship[8]
+b8 <- ship[9]
+b9 <- ship[10]
+b10 <- ship[11]
+b11 <- ship[12]
+b12 <- ship[13]
+b13 <- ship[14]
+b14 <- ship[15]
+
+
+summary(battle)
+
+```
+
+
+```{r}
+ggpairs(rbdata, panel = panel.smooth)
+
+```
+
+
+<br/>
+    
+3. Your **sample size** must be sufficiently large so that when the true model is fit to your data using lm(...), **all p-values** of terms found in the `summary(...)` output **are significant** at the $\alpha = 0.05$ level.
+
+4. The $R^2$ value ("Multiple R-squared", not the "Adjusted R-squared") of your true model fit on your `rbdata` sample must be greater than or equal to $0.30$. The higher your $R^2$ value, the more impressive your model.
+
+5. Your true model must be **2D-drawable**. This means that it can be drawn in both Desmos and with a single 2D scatterplot in R.
+
+<br/>
+<br/>
+
+```{r}
+library(ggplot2)
+
+ggplot(rbdata, aes(x = x5, y = y, color = as.factor(x11))) +
+
+  # True red line
+  stat_function(
+    fun = function(x) beta0 + beta1*x + beta2*x^2 + beta3*x^3,
+    color = "red", linetype = "solid", linewidth = 1
+  ) +
+
+  # True green line
+  stat_function(
+    fun = function(x) (beta4 + beta10) + (beta5 + beta11)*x + (beta6 + beta12)*x^2 + 
+                  (beta7 + beta13)*x^3 + (beta8+ beta14)*x^4 + beta9*x^5,
+    color = "darkgreen", linetype = "solid", linewidth = 1
+  ) +
+  
+  stat_function(fun = function(x) 0.25 + 1*x, color = "black", linewidth = 1) +
+  stat_function(fun = function(x) 0.25 + 2*x, color = "pink", linewidth = 1) +
+  stat_function(fun = function(x) 0.25 + 3*x, color = "blue", linewidth = 1) +
+  stat_function(fun = function(x) 0.25 + 4*x, color = "purple", linewidth = 1) +
+
+  coord_cartesian(ylim = c(0, 0.4), xlim = c(-0.2, 0.2)) +
+  labs(color = "x11 Group") +
+  theme_minimal()
+
+
+# stat_fuction ( add the appropriate betas together)
+
+```
+
+
+
+#### Intermediate Level Competition
+
+Competing in the *Intermediate Level* will **only** allow you to earn **up to 88%** of the full credit that is possible on the Regression Battleship portion of your grade in Math 425 (which is 15% of your Final Grade). *However, getting 88% of the grade is better than failing* the advanced level competition and getting 0% of the Regression Battleship grade. So choose this option if you are not feeling comfortable with your abilities to compete at the Advanced Level. The good news is that if you choose this option, your teacher can help you with your model to make sure everything is correct before you turn it in.
+
+For the Intermediate Level competition, there are also five official rules your model must abide by. If you break any of the rules, you will be disqualified from winning the Intermediate Level competition and a point penalty will be applied to your grade.
+
+1. Your csv file `rbdata.csv` must contain **6 columns of data**.
+    * The first column must be your (1) y-variable (labeled as `y`).
+    * The other five columns must be (5) x-variables (labeled as `x1`, `x2`, `x3`, `x4` , `x5`). *Please use all lower-case letters.* It does not matter which x-variables you use in your model, and you don't need to use all 5 x-variables in your model.
+   
+<br/>
+    
+2. Your **y-variable** must have been **created from a linear regression model** using only x-variables **from** within **your data set**.
+    * No transformations of y-variables or x-variables are allowed in the Intermediate Level competition.
+
+<br/>
+    
+3. Your **sample size** must be sufficiently large so that when the true model is fit to your data using lm(...), **all p-values** of terms found in the `summary(...)` output **are significant** at the $\alpha = 0.05$ level.
+
+4. The $R^2$ value ("Multiple R-squared", not the "Adjusted R-squared") of your true model fit on your `rbdata` sample must be greater than or equal to $0.80$.
+
+5. Your true model must be **2D-drawable**. This means that it can be drawn in Desmos and with a single 2D scatterplot in R.
+
+<br/>
+<br/>
+
+
+
+## Desmos 
+
+Start by creating a picture of your true model in Desmos. Snip a screenshot of your completed model. Include a picture of your Desmos graph showing your true model.
+
+<!-- Delete this line 
+
+![](NameofYourDesmosPicture.png) 
+
+and delete this line for the image code above to work. --> 
+
+
+## Code
+
+Use the R-chunks below to create your simulated sample of data from your true regression model.
+
+
+```{r, comment=NA}
+set.seed(122) #This ensures the randomness is the "same" everytime if you play the entire R-chunk as one entire piece of code. If you run lines separately, your data might not come out the same every time. You can pick any integer value you want for set.seed. Each choice produces a different sample, so you might want to play around with a few different choices.
+
+## To begin, decide on your sample size. (You may have to revise it later to ensure all values in your lm(...) are significant.)
+  
+ n <- 50
+  
+## Then, create 10 X-variables using functions like rnorm(n, mean, sd), rchisq(n, df), rf(n, df1, df2), rt(n, df), rbeta(n, a, b), runif(n, a, b) or sample(c(1,0), n, replace=TRUE)... ## To see what any of these functions do, run codes like hist(rchisq(n, 3)). These functions are simply allowing you to get a random sample of x-values. But the way you choose your x-values can have quite an impact on what the final scatterplot of the data will look like.
+
+ x1 <- rep(0,n) #replace this
+ x2 <- rep(0,n) #replace this
+ x3 <- rep(0,n) #replace this
+ x4 <- rep(0,n) #replace this
+ x5 <- rep(0,n) #replace this
+ x6 <- rep(0,n) #replace this
+ x7 <- rep(0,n) #replace this
+ x8 <- rep(0,n) #replace this
+ x9 <- rep(0,n) #replace this
+ x10 <- rep(0,n) #replace this
+ 
+## Then, create betas, sigma, normal error terms and y
+ 
+ #beta0 <- ...
+ #beta1 <- ...   
+ #...
+ 
+ sigma <- 1.72 #change to whatever positive number you want
+ 
+
+ ################################
+ # You ARE NOT ALLOWED to change this part:
+ epsilon_i <- rnorm(n, 0, sigma)
+ ################################ 
+ 
+ #An example of how to make Y...
+ # y <-  beta0 + beta1*X1 + beta2*X2 + beta3*X4*X2 + epsilon_i
+ 
+ y <- 0 #...edit this code and replace it with your model. Don't forget the + epsilon_i!
+ 
+ 
+ ## Now, you need to load your x-variables and y-variable 
+ ## into a data set.
+ # You can include Y' or X' instead of Y or X if you wish.
+ # Remember, only these functions are allowed when transforming
+ # variables: 1/Y^2, 1/Y, log(Y), sqrt(Y), sqrt(sqrt(Y)), Y^2, Y^3, 1/X^2, 1/X, log(X), sqrt(X), sqrt(sqrt(X)), X^2, X^3, X^4, X^5. 
+ #########################################################
+ # ILLEGAL: Y = (beta0 + beta1*X5)^2 + epsilon_i #########
+ #########################################################
+ # Legal: sqrt(Y) = beta0 + beta1*X5^2 + epsilon_i #######
+ #########################################################
+ # You can only transform individual terms, not groups of terms.
+ # And the beta's cannot be part of the x-transformations.
+
+ # This loads your data into a data set:
+ rbdata <- data.frame(y, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)
+ 
+ #Now fit your model to make sure it comes out significant:
+ mylm <- lm(y ~ 0, data=rbdata) #edit this code to be your true model
+ summary(mylm)
+ #all p-values must be significant
+ #the R^2 value must be greater than or equal to 0.30.
+ 
+
+# Once you are done with creating your model, and have successfully
+# graphed it (see below), un-comment the following `write.csv` code,
+# then, PLAY this ENTIRE R-chunk to write your data to a csv.
+
+ # write.csv(rbdata, "rbdata.csv", row.names=FALSE)
+
+# The above code writes the dataset to your "current directory"
+# To see where that is, use: getwd() in your Console.
+# Find the rbdata.csv data set and upload it to I-Learn.
+```
+
+
+
+
+
+
+## R Plot
+
+Provide a 2D scatterplot that shows both your *true* model (dashed lines) and *estimated* model (solid lines) on the same scatterplot. This should match your Desmos graph. 
+
+```{r}
+
+```
+
+
+## Math Model
+
+Write out your "true" model in mathematical form. Make sure it matches your code. This could be "painful" if you chose a complicated model.
+
+$$
+  \text{EXAMPLE:} \ Y_i = \beta_0 + \beta_1 X_{4i} + \beta_2 X_{2i} + \beta_3 X_{4i} X_{2i} + \epsilon_i
+$$
+
+
+## Results
+
+Once the Regression Battleship competition is completed, you will be given instructions on how to complete this section. The basic idea is to compare the three guesses at your true model (from two peers, and your teacher) to decide who won (i.e., who had the closest guess).
+
+
+
+ 
+
+ 

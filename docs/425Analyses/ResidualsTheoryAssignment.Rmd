@@ -1,0 +1,895 @@
+---
+title: "Residuals, Sums of Squares, and R-Squared"
+output: 
+  html_document:
+    theme: simplex
+    coding_folding: hide
+
+---
+
+Table of Contents
+
+```{r message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(haven)
+library(rmarkdown)
+
+```
+
+*Click between each section to look at our Concepts or the Application in our Prediction Weather Analysis*
+
+Residual Concepts
+
+What is a Residual?
+<div style="padding-left:125px;color:black;">
+
+<br>
+
+A **residual** is just the difference between:
+
+- What you **actually observed** ($Y_i$)
+- What your model **predicted** ($\hat{Y_i}$)
+
+$$r_i = Y_i - \hat{Y_i}$$
+
+Think of it as "how far off was my prediction of that jar of jelly beans?"
+
+
+<br>
+
+*Click between tabs for further explanations*
+
+
+ 
+
+Hide Residual Explainations
+
+
+<br>
+
+---
+
+Why do residuals matter?
+
+<br>
+
+- They help check if your model is working well by looking for:
+  - Whether relationships between variables are truly linear
+  - If the spread of errors is consistent
+  - If errors follow a normal distribution
+  - If data points are independent of each other
+
+When looking at residual plots, **you want to see points scattered randomly** - like if someone threw a bunch of marbles on the floor (accidentally of course). If you see **clear patterns**, something might be wrong with your model.
+
+
+
+<br>
+
+---
+
+Real Life Comparison for Residuals
+
+<br>
+
+<u>Imagine you're baking cookies:</u>
+
+- The recipe says they should take exactly 12 minutes to bake
+  - But the actual baking times might be:
+    - Batch 1: 13 minutes (residual = +1)
+    - Batch 2: 11 minutes (residual = -1)
+    - Batch 3: 12 minutes (residual = 0)
+    
+<br>
+
+The residual is how far off your actual baking time was from the **predicted** 12 minutes. **Sometimes it's over, sometimes under, and sometimes exactly right** (just depends on how burnt you like your cookies, JK).
+
+This helps you see how accurate your recipe's timing prediction is for each batch of cookies.
+
+<br>
+
+```{r}
+data <- data.frame(
+  BatchNumber = 1:10,
+  ActualTime = c(13, 11, 12, 14, 10, 12, 15, 9, 13, 11),
+  PredictedTime = rep(12, 10)
+)
+
+# Fit the linear model
+model <- lm(ActualTime ~ BatchNumber, data = data)
+
+data$PredictedValue <- predict(model)
+
+# Create a plot with residuals visually connected
+ggplot(data, aes(x = BatchNumber, y = ActualTime)) +
+  geom_point(color = "pink", size = 3) +  # Data points
+  geom_smooth(method = "lm", se = FALSE, color = "gray") +  # Regression line
+  geom_segment(aes(x = BatchNumber, y = ActualTime, xend = BatchNumber, yend = PredictedValue),
+               color = "pink", linetype = "solid", size = 0.8) +  # Residuals lines
+  labs(title = "Linear Regression: Actual Baking Time vs Batch Number",
+       x = "Batch Number", y = "Actual Baking Time (minutes)") +
+  theme_minimal()
+
+```
+
+
+<br>
+
+
+---
+
+What is a Sum of Squares Error (SSE)?
+
+<div style="padding-left:125px;color:black;">
+
+<br>
+
+A **SSE** is the **measurement of how much the residuals(the observed value - the predicted value) deviate from the line(the law)**. This can also be explained as the amount of variability that is NOT explained by the model. 
+
+- We want this to be **small**, relative to SSTO (total variability)
+- Can never be negative
+
+<br>
+
+This is calculated by the following model: 
+
+$$SSE = \underbrace{\sum_{i=1}^n}_\text{The sum of} (\underbrace{Y_i}_\text{Observed Value(The Dots)} - \underbrace{\hat{Y_i}}_\text{Predicted Value (The Line)})^2 $$
+
+<br>
+
+*Click between tabs for further explanations*
+
+
+
+
+Hide SSE Explainations
+
+
+<br>
+
+---
+
+Why does the SSE matter?
+
+<br>
+
+**We want these differences to be small** compared to how much your drive times vary overall (SSTO).
+
+- If they're small, it means our prediction is doing a good job!!
+- And just like you can't have a negative amount of variation (you can't vary "negative minutes" from your prediction), these measures can't be negative.
+
+<br>
+
+---
+
+
+Real Life Comparison of SSE
+
+<br>
+
+<u>Think of predicting how long it takes to drive to work:</u>
+
+Your **actual drive times vary** (maybe 20, 25, or 30 minutes depending on things traffic, how fast you drive, who knows?), **but** your **prediction model** says it always takes 23 minutes 
+
+- The **unexplained variability** is all those differences between your actual times and your 23-minute prediction! (aka the SSE)
+
+
+<br>
+
+
+---
+
+What is a Sum of Squares Regression (SSR)?
+
+<div style="padding-left:125px;color:black;">
+
+<br>
+
+A **SSR** is **the measurement of how much the regression line (the law) deviates from the average y-value (overall mean)**. This can also be explained as the amount of variability EXPLAINED by the model by showing how far our predicted y values deviate from the overall mean. 
+
+- We want this to be large relative to SSTO
+- Can never be negative
+
+<br>
+
+This can be calculated by the following model:
+
+$$SSR = \underbrace{\sum_{i = 1}^n}_\text{The sum of} (\underbrace{\hat{Y_i}}_\text{Predicted Y (The Line)} - \underbrace{\bar{Y}}_\text{Average Y (Overall Mean)})^2$$
+
+<br>
+
+*Click between tabs for further explanations*
+
+Hide SSR Explainations
+
+<br>
+
+---
+
+Why does SSR matter?
+
+<br>
+
+SSR matters because **it tells us how good our predictions are**.
+
+It shows how much of what we're trying to predict **can actually be explained by our model**
+- A **larger** SSR means our predictions are **more reliable and useful**
+- It helps us decide if our prediction method is worth using
+
+
+<br>
+
+---
+
+Real life Comparison of SSR
+
+<br>
+
+<u>Imagine predicting pizza delivery times:</u>
+
+The delivery app says:
+
+- Small orders: 20 minutes
+- Medium orders: 30 minutes
+- Large orders: 40 minutes
+
+SSR **measures how much these categories actually help EXPLAIN delivery times**. For example:
+
+- If order size really **DOES** determine delivery time, then **SSR would be large**
+  - order size is actually a useful factor for making predictions
+  - meaning **your prediction system works well**
+
+- If delivery times are **RANDOM** regardless of order size, then **SSR would be small**   - we might need to consider other factors like time of day or distance instead  
+  - meaning **your prediction system isn't very helpful**
+
+
+Just like you can't have "negative accuracy" in predictions, SSR can't be negative. The **bigger** the SSR compared to total variation (SSTO), the **better** your prediction model is working.
+
+
+
+<br>
+
+---
+
+What is a Sum of Squares Total (SSTO)?
+
+<div style="padding-left:125px;color:black;">
+
+<br>
+
+A **SSTO** is **the measurement of how much the y-values deviate from the average y- value**. This can also be explained as the total variability of our model. 
+
+- Largest of the three values
+- Can never be negative
+
+<br>
+
+**Key Relationship:**
+SSTO = SSR + SSE -> Total Variation = Explained Variation + Unexplained Variation
+
+<br>
+
+- SSR/SSTO represents the proportion of variability explained by the model (R²)
+- The smallest possible value for all three is 0
+- SSTO will always be the largest, as it represents total variability in the response variable (y). 
+
+<br>
+
+This is calculated by the following:
+
+$$SSR + SSE = SSTO = \underbrace{\sum_{i=1}^n}_\text{The sum of} (\underbrace{Y_i}_\text{Observed Y Values (The Dots)} - \underbrace{\bar{Y}}_\text{Average Y (Overall Mean)})^2$$
+
+<br>
+
+*Click between tabs for further explanations*
+
+Hide SSTO Explainations
+
+<br>
+
+---
+
+Why does SSTO matter?
+
+<br>
+
+The total variation (SSTO) helps us to know **if our predictions are actually useful or just lucky guesses**!
+
+- A good model has **large SSR** (Explained Variation) and **small SSE** (Unexplained Variation) relative to SSTO (Total Variation)
+  - if it is the other way around, that means our model is not very good
+
+<br>
+
+---
+
+Real Life Comparison of SSTO
+
+<br>
+
+<u>Imagine you own a coffee shop and want to understand your daily sales patterns:</u>
+
+**Total Variation (SSTO):**
+
+- Your daily sales vary between 80-150 cups per day
+- This is the total range of how much your sales go up and down
+
+<br>
+
+**This total variation can be broken into two parts**:
+
+1. **Explained Variation (SSR):**
+- Things you can predict 
+  - like selling more coffee on cold days or your coffee shop is holding a fundraiser
+- If cold days and planned fundraisers consistently mean more sales, this is a reliable pattern
+
+
+
+2. **Unexplained Variation (SSE):**
+- Random things you can't predict
+  - like a surprise business meeting nearby, or a bus full of high schoolers get dropped off here (yikes)
+- These are the *mystery factors* affecting your sales
+
+<br>
+
+The **better** your prediction model, the **more of your total variation (SSTO) is explained by your model (SSR)**, and the **less remains unexplained** (SSE).
+
+
+<br>
+
+---
+
+What is R-squared?
+
+<div style="padding-left:125px;color:black;">
+
+<br>
+
+The **R-squared** is **the proportion of variability in Y** that can be explained by the regression.
+
+$$R^2 = \frac{SSR}{SSTO} = 1 - \frac{SSE}{SSTO} $$
+
+<br>
+
+**Correlation:**
+
+- **ranges from -1.00 to +1.00**
+  - Strong correlation -> closer to +/- 1
+  - Weaker correlation -> farther from +/- 1 (ex. 0)
+
+**Direction of relationship:**
+
+- Positive R-squared: Variables increase or decrease together.
+- Negative R-squared: Variables move in opposite directions - as one increases, the other decreases.
+
+<br>
+
+*Click between tabs for further explanations*
+
+Hide R Squared Explainations
+
+<br>
+
+---
+
+Why does R Squared matter?
+
+<br>
+
+It tells us **how reliable** our predictions are!
+- Additionally, it shows us **how confident** we can be in our predictions (using correlation and strength)
+
+<br>
+
+**R-squared VS P-value**
+
+We can further understand R-squared by how it differs from the p-value for slope:
+
+- R-squared measures the **strength of the relationship**
+- P-value indicates **whether the relationship is statistically significant**
+
+<br>
+
+---
+
+Real Life Comparison for R Squared
+
+<br>
+
+<u>Imagine trying to predict ice cream sales based on temperature:</u>
+
+R-squared tells you how much temperature actually explains ice cream sales:
+
+If R-squared = 0.80 (or 80%):
+- Temperature explains 80% of why ice cream sales go up or down
+- The other 20% might be due to other factors like holidays or promotions
+
+<br>
+
+<u>**Correlation** in this scenario works like this:</u>
+
+Perfect Positive Correlation (+1.00):
+
+- If every 1°F increase in temperature meant exactly 5 more ice creams sold
+    - 70°F = 100 ice creams
+    - 71°F = 105 ice creams
+    - 72°F = 110 ice creams
+    
+
+**Strong Positive Correlation (around +0.8):**
+
+- Temperature usually drives sales, but it's not perfect
+    - Hot day (90°F) = around 200 ice creams
+    - But some hot days might only sell 180, others might sell 220
+    - Other factors like weekends or holidays affect sales too
+
+**No Correlation (0):**
+
+- If ice cream sales were completely random regardless of temperature
+    - Could sell 150 ice creams on both a 60°F day and a 90°F day
+    - Temperature tells us nothing about likely sales
+
+**Negative Correlation (towards -1.00):**
+
+- This could be used to describe hot coffee sales instead!
+    - As temperature goes up, ice cream sales increase (positive correlation) but hot coffee sales decrease (negative correlation)
+    - The stronger the pattern, the closer to -1.00
+    
+<br>
+
+Think of it as **how confident you can be in your predictions based on the relationship between two things**.
+
+
+<br>
+
+---
+
+What is the Mean Squared Error (MSE) & the "Residual Standard Error"(RSE)?
+
+<div style="padding-left:125px;color:black;">
+
+<br>
+
+The **MSE** is **the measurement of the average squared difference** between predicted and actual values
+- Can be **any non-negative number** (0 to infinity)
+- Units are squared units of the original data (e.g., degrees Fahrenheit²)
+
+$$MSE = \frac{SSE}{n-p}$$
+
+<br>
+
+**Relationship to R-squared**
+
+| MSE | R-Squared |
+| --- | --- |
+| measures **prediction error** | measures **variance explained** |
+| between 0 and infinity | between 0 and 1 (0% - 100%) |
+| units are squared units of the original data | unitless |
+
+    
+    
+<br>
+
+The **Residual Standard Error** (RSE) is **the square root of MSE**.
+- Found in R regression summary output
+  - Uses same units as original data (e.g., degrees Fahrenheit)
+  
+$$RSE = \sqrt{MSE} = \sqrt{\frac{SSE}{n-p}}$$
+
+<br>
+
+*Click between tabs for further explanations*
+
+Hide MSE and RSE Explainations
+
+<br>
+
+---
+
+Why do the MSE and the RSE matter?
+
+<br>
+
+Together, they indicate the fit of our model:
+
+- **Lower values** of MSE and RSE indicate **better model fit**
+- They help assess the accuracy of predictions in the original data's scale
+
+<br>
+
+---
+
+Real Life Comparison of MSE and Residual Error
+
+<br>
+
+
+<u>Think of predicting daily temperatures:</u>
+
+The **MSE** would be like measuring **how far off your temperature predictions are on average**, but the errors are **squared**
+- If you predict 75°F and it's actually 73°F
+  - that's a difference of 2°F, which gets squared to 4°F²
+  - **The MSE would be the average of all these squared differences**
+
+<br>
+
+The **Residual Standard Error (RSE)** would **convert this back to the original temperature units by taking the square root**
+- So instead of 4°F², you'd get back to a value in °F
+- **making it more intuitive to understand how far off your predictions typically are**
+
+<br>
+
+**Lower values** in both cases would mean **your temperature predictions are more accurate!!** 
+- aka. you're better at forecasting the actual temperatures that occur! (like a psychic)
+
+<br>
+
+---
+
+Application on Weather Prediction Analysis
+
+<br>
+
+For this study, we were tasked with **predicting the "Actual Maximum Air Temperature" for this coming Monday, January 13th at BYU-Idaho**. BYU-Idaho is located in the city of Rexburg, Idaho, and thus we will use this city's weather recordings from [timeanddate.com](https://www.timeanddate.com/weather/@5605242/historic?month=1&year=2025) to make our predictions. 
+
+<br>
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+janweather <- read.csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/JanWeather.csv")
+
+prediction <- data.frame(
+  STARTMAXTEMP=16,
+  MAXTEMP= 26,
+  label = "Prediction Point : 26°F"
+)
+
+janweathery_plot <- ggplot(janweather, aes(x = STARTMAXTEMP, y = MAXTEMP)) +
+  geom_point(
+    aes(
+      text = paste(
+        "Date:", DATE, "<br>",
+        "Start Max Temp. of the Day:", STARTMAXTEMP, "\u00b0F<br>",
+        "Max Temp. of the Day:", MAXTEMP, "\u00b0F"
+      )
+    ),
+    size = 2,
+    color = "darkblue"
+  ) +
+  geom_smooth(method = "lm", formula= y~x, se = FALSE, color = "dodgerblue") +
+  labs(
+    title = "Weather Patterns from January 13th's of the Past",
+    x = "Max Start Temperature of the Day (\u00b0F)",
+    y = "Max Temperature of the Day (\u00b0F)"
+  ) +
+  geom_point(data=prediction,
+             aes(x=STARTMAXTEMP, y=MAXTEMP),
+             size = 3,
+             color= "red") +
+  geom_text(
+    data = prediction,
+    aes(x = STARTMAXTEMP, y=MAXTEMP, label = label),
+    nudge_x = -7,
+    nudge_y = 3.6,
+    color= "red",
+    size = 3
+  ) +
+  theme_minimal()
+
+ggplotly(janweathery_plot, tooltip = "text")
+```
+
+
+<br>
+
+This is our mathematical model: 
+$$\underbrace{Y_i}_\text{MAXTEMP} = \overbrace{\beta_0}^\text{Intercept} + \overbrace{\beta_1}^\text{Slope} \underbrace{X_i}_\text{STARTMAXTEMP}+ \epsilon_i \text{ where} \sim N(0,\sigma^2)$$
+
+</center>
+
+<br>
+
+This is our Simple Linear Regression test: 
+```{r}
+janlm <- lm(MAXTEMP ~ STARTMAXTEMP, data=janweather)
+
+summary(janlm)%>%
+  pander()
+```
+
+<br>
+
+***Using this study, we will go further in depth with applying how residuals work in this study.***
+
+<br>
+
+---
+
+What does the residual tell us about our predicted temperature for Monday January 13th?
+
+<br>
+
+As a reminder **residuals are the difference between the observed value ($Y_i$) and the predicted value ($\hat{Y_i}$)**.
+
+In context of this study, the residual of a given point would be the difference between the observed `MAXTEMP` and the predicted `MAXTEMP`. This can be depicted as the following: 
+
+$$Residual = \text{Observed MAXTEMP - Predicted MAXTEMP}$$
+Below is the table of residuals for all 8 of the points used in this data set. 
+
+```{r}
+pander(janlm$residuals)
+```
+|Residual Value | Meaning |
+| --- | --- | 
+| Positive Residual(+) | the prediction `MAXTEMP` is **lower** than the observed `MAXTEMP` (aka. an under prediction) |
+| Negative Residual(-) | the prediction `MAXTEMP` is **higher** than the observed `MAXTEMP` (aka. an over prediction)| 
+| Close to 0 | the prediction `MAXTEMP` is **very close** to the observed `MAXTEMP` (aka. a good fit prediction) |
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+janweather$predicted_MAXTEMP <- predict(janlm)
+
+# Calculate residuals (difference between actual and predicted values)
+janweather$residuals <- janweather$MAXTEMP - janweather$predicted_MAXTEMP
+
+# Plot with regression line and residuals
+ggplot(janweather, aes(x = STARTMAXTEMP, y = MAXTEMP)) +
+  geom_point(
+    size = 2,
+    color = "pink"
+  ) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "black") +  # Mean line
+  # Add vertical lines representing residuals
+  geom_segment(aes(x = STARTMAXTEMP, xend = STARTMAXTEMP, y = predicted_MAXTEMP, yend = MAXTEMP),
+               color = "pink", linetype = "solid", size = 0.8) +  # Residuals (error lines)
+  labs(title = "Residuals of Weather Prediction Analysis") +
+  theme_minimal()
+```
+
+</center>
+
+
+<br>
+
+---
+
+How do the SSE, SSR, and SSTO apply to this study? 
+
+<br>
+
+These values are depicted below:
+```{r}
+janweather$predicted_MAXTEMP <- predict(janlm)
+
+janweather$residuals <- janweather$MAXTEMP - janweather$predicted_MAXTEMP
+
+SSTO <- sum((janweather$MAXTEMP - mean(janweather$MAXTEMP))^2)
+
+SSR <- sum((janweather$predicted_MAXTEMP - mean(janweather$MAXTEMP))^2)
+
+SSE <- sum(janweather$residuals^2)
+
+pander(cat("SSE:", round(SSE,2), "\n"))
+pander(cat("SSR:", round(SSR,2), "\n"))
+pander(cat("SSTO:", round(SSTO,2), "\n"))
+```
+
+Here is how these concepts apply: 
+
+| Concept | Meaning | Application | 
+| --- | --- | --- | 
+| Sum of Squared Errors (SSE) | measures the **unexplainable** variation in the data | - how much of the variation in `MAXTEMP` is not explained by the relationship with `STARTMAXTEMP`- We want our SSE to be **smaller than our SSTO** as that indicates our model is a good fit and the amount of unexplained variability we have, and with a SSE of 109.66, this confirms that our model is a good fit and doesn't have a lot of unexplained variability  |
+| Sum of Squared Regression (SSR) | measures the **explainable** variation in the data | - how much of the variation in `MAXTEMP` is explained by the relationship with `STARTMAXTEMP`- We want our SSR to be **big** as that indicates our model is a good fit, and with a SSR of 684.34 this confirms that our model does a good job at explaining the variability of `MAXTEMP` and a good fit for our data |
+| Sum of Squared Total(SSTO) | measures the **total variation** in the data, combining the explained and unexplained parts | - total variability in `MAXTEMP` |
+
+
+Graphs of the SSR, SSE, and SSTO
+
+SSR Graph
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+mean_MAXTEMP <- mean(janweather$MAXTEMP)
+
+ggplot(janweather, aes(x = STARTMAXTEMP, y = MAXTEMP)) +
+  geom_point(
+    size = 2,
+    color = "grey"
+  ) +
+  geom_smooth(method = "lm", formula= y~x, se = FALSE, color = "black") +
+  geom_segment(aes(x = STARTMAXTEMP, xend = STARTMAXTEMP, y = predicted_MAXTEMP, yend = mean_MAXTEMP),
+               color = "green", linetype = "dashed", size= .8) +
+  geom_hline(yintercept = mean_MAXTEMP, color = "grey", linetype = "solid", size = 0.8) +
+               labs(title = "SSR of Weather Prediction Analysis") +
+  theme_minimal()
+
+```
+</center>
+
+<br>
+
+SSE Graph
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+ggplot(janweather, aes(x = STARTMAXTEMP, y = MAXTEMP)) +
+  geom_point(
+    size = 2,
+    color = "grey"
+  ) +
+  geom_smooth(method = "lm", formula= y~x, se = FALSE, color = "black") +
+    geom_segment(aes(x = STARTMAXTEMP, xend = STARTMAXTEMP, y = MAXTEMP, yend = predicted_MAXTEMP),
+               color = "red", linetype = "dotted", size = 1) +
+  geom_hline(yintercept = mean_MAXTEMP, color = "grey", linetype = "solid", size = 0.8) +
+               labs(title = "SSE of weather Prection Analysis") +
+  theme_minimal()
+```
+
+</center>
+
+<br>
+
+SSTO Graph
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+ggplot(janweather, aes(x = STARTMAXTEMP, y = MAXTEMP)) +
+  geom_point(
+    size = 2,
+    color = "grey"
+  )+
+    geom_segment(aes(x = STARTMAXTEMP, xend = STARTMAXTEMP, y = MAXTEMP, yend = mean_MAXTEMP),
+               color = "blue", linetype = "dotted", size = 1) +
+  geom_hline(yintercept = mean_MAXTEMP, color = "blue", linetype = "dotted", size = 1) +
+               labs(title = "SSTO of Weather Prediction Analysis") +
+  theme_minimal()
+```
+
+</center>
+
+<br>
+
+All Together
+
+<center>
+
+
+```{r}
+ggplot(janweather, aes(x = STARTMAXTEMP, y = MAXTEMP)) +
+  geom_point(
+    size = 2,
+    color = "grey"
+  ) +
+  geom_smooth(method = "lm", formula= y~x, se = FALSE, color = "lightblue") +
+  geom_segment(aes(x = STARTMAXTEMP + 0.1, xend = STARTMAXTEMP + 0.1, y = predicted_MAXTEMP, yend = mean_MAXTEMP),
+               color = "green", linetype = "dashed", size = .8) +
+  geom_segment(aes(x = STARTMAXTEMP + 0.2, xend = STARTMAXTEMP + 0.2, y = MAXTEMP, yend = predicted_MAXTEMP),
+               color = "red", linetype = "dotted", size = 1) +
+  geom_segment(aes(x = STARTMAXTEMP + 0.3, xend = STARTMAXTEMP + 0.3, y = MAXTEMP, yend = mean_MAXTEMP),
+               color = "blue", linetype = "dotted", size = 1) +
+  geom_hline(yintercept = mean_MAXTEMP, color = "blue", linetype = "dotted", size = 2) +
+  geom_hline(yintercept = mean_MAXTEMP, color = "grey", linetype = "solid", size = 0.8) +
+  
+  labs(title = "SSR, SSE, and SSTO of Weather Prediction Analysis") +
+  theme_minimal()
+```
+
+</center>
+
+<br>
+
+---
+
+What does R Squared offer to this study? 
+
+<br>
+
+In this study, **R Squared explains how well our independent variable, `STARTMAXTEMP`, explains/predicts our dependent variable, `MAXTEMP`**.
+
+You can find our R Squared value by either computing in the equation below or by looking in our Simple Linear Regression Test under $R^2$.
+
+<br>
+
+$$R^2 = \frac{SSR}{SSTO} = \frac{684.34}{794} = 0.8619	$$
+
+<br>
+
+```{r}
+janlm <- lm(MAXTEMP ~ STARTMAXTEMP, data=janweather)
+
+summary(janlm)%>%
+  pander()
+```
+
+
+<br>
+
+With this value, we can interpret our **0.8619 $R^2$** value with the following table: 
+
+| $R^2$ Value | Interpretation |
+| --- | --- | 
+| close to +/- 1 | Perfect fit, perfectly variablility in `MAXTEMP` using `STARTMAXTEMP` |
+| around 0 | Not a good fit, does not explain ANY variablility in `MAXTEMP` and there is no relationship between the two variables |
+
+- Our $R^2$ shows **86.19%** of variation in `MAXTEMP` that can be explained with the `STARTMAXTEMP`
+  - The remaining percentage can be seen as some variation due to some random other factors
+  - Overall, our $R^2$ assesses that **the linear regression model does fit this data well**.
+  
+<br>
+
+```{r}
+ggplot(janweather, aes(x = STARTMAXTEMP, y = MAXTEMP)) +
+  geom_point(
+    size = 2,
+    color = "purple"
+  ) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "black") +  # Mean line
+  # Add vertical lines representing residuals
+  geom_segment(aes(x = STARTMAXTEMP, xend = STARTMAXTEMP, y = predicted_MAXTEMP, yend = MAXTEMP),
+               color = "purple", linetype = "solid", size = 0.8) +
+  geom_rect(aes(xmin=STARTMAXTEMP, xmax=STARTMAXTEMP+janlm$res, ymin=MAXTEMP , ymax=janlm$fit), alpha = 0.3, color="purple") +
+  labs(title = "Residuals of Weather Prediction Analysis") +
+  theme_minimal()
+```
+
+
+<br>
+
+---
+
+How does the MSE and "Residual Standard Error"(RSE) apply to this study?
+
+<br>
+
+Both the MSE and the "Residual Standard Error" help in assessing the accuracy and reliability of our weather prediction model. 
+- MSE giving us the overall unitless measure of our prediction error 
+  - Lower MSE: model is doing well in predicting the Y(`MAXTEMP`) from the X(`STARTTEMP`)
+  - Higher MSE: model is NOT doing well in predicting the Y(`MAXTEMP`) from the X(`STARTTEMP`), as the data does not fit well
+- "Residual Standard Error" gives us a specific unit measurement of how much error is present in our model's predictions
+
+```{r}
+predictions <- predict(janlm)
+
+MSE <- mean((janweather$MAXTEMP - predictions)^2)
+
+rse <- sqrt(MSE)
+
+pander(cat("MSE:", round(MSE,2), "\n"))
+pander(cat("RSE:", round(rse,2), "°F"))
+```
+
+With these values we are able to deduce the following: 
+- MSE: The average of all the squared differences is **13.71**
+- RSE: On average, the `MAXTEMP` from our study is **about 3.7°F from the actual values**
+
+<br>
+
+
+---
+
+

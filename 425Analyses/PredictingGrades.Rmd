@@ -1,0 +1,380 @@
+---
+title: "<center>Predicting Grades for Math 325</center>"
+output: 
+  html_document:
+    theme: simplex
+    toc: true
+    toc_float: true
+    toc_depth: 5
+    code_folding: hide
+---
+
+# Background
+
+In this study, we will create a multiple logistic regression model that predicts whether or not a student will get an A (or A-) for their final grade in Math 325, Intermediate Statistics.
+
+
+
+
+<br>
+
+---
+
+
+## {.tabset .tabset-pills}
+
+### Hide Data
+
+<br>
+
+---
+
+### Show Data
+
+Below is the data from past Math 325 students. The full data set consists of grades from every assignment within Math 325. 
+
+```{r message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(haven)
+
+
+gradetrain <- read.csv("~/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/math325grades_train.csv", stringsAsFactors=TRUE)
+
+gradetest <- read.csv("~/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/math325grades_test.csv")
+
+gradetrain <- na.omit(gradetrain) %>%
+  
+  mutate(gradeA = ifelse(FinalGrade %in% c("A", "-A"), 1, 0))
+
+glmgrade <- glm(gradeA ~ SkillsQuizzesTotalCurrentScore + SkillsQuizzesTotalCurrentScore:CurrentScore + AssessmentQuizzesCurrentScore:CurrentScore, data=gradetrain, family=binomial)
+
+datatable(gradetrain)
+```
+
+
+<br>
+
+---
+
+# Logistic Regression Model
+
+The graphic below depicts the most significant predictors of whether or not a student will get an A in Math 325. I show them in different graphs so flip through them to learn more about each variable. At first glance, these graph looks very overwhelming, so let's dissect this!
+
+- The flat surface (x and y axes) represents two important test scores:
+  - Going left to right: Current Score
+  - Going front to back: Assessment Quizzes Score
+
+
+- The height (z axis) shows the chance of getting an A grade (from 0% to 100%)
+
+- The dots are actual students:
+  - Blue dots are students who **didn't** get an A
+  - Red dots are students who **did** get an A
+
+
+- The colored surface is like a prediction landscape showing how likely students are to get an A with different combinations of scores
+
+
+```{r}
+
+table_data <- data.frame(
+  Variable = c("The Mountain", "The Steepness", "The Two Scores", "The Thesholds"),
+  
+  Description = c("Areas where the surface is high (closer to 1.0) show score combinations that likely lead to an A. Areas where the surface is low (closer to 0.0) show score combinations that likely don't lead to an A.
+",
+                  "Steep slopes show where small improvements in scores make a big difference. Flat areas show where score changes don't matter as much.",
+
+                  "If the surface climbs more quickly as you move along one axis, that score has more impact. For example, if the surface rises sharply with Current Score but less with Quiz Score, then Current Score matters more!", 
+
+                  "Look for where the surface crosses the middle height (0.5 or 50% chance). This is like a dividing line between likely passing and failing.")
+)
+
+# Print the table in a markdown-friendly format
+kable(table_data, format = "markdown", col.names = c("What Should We Note?", "What Does it Tell Us?"))
+
+```
+
+<br>
+
+---
+
+## {.tabset .tabset-fade}
+
+### Skills Quizzes and Current Scores Graph
+
+This graph shows how the probability of earning an A changes depending on Skills Quizzes scores and Current Score. The curvature of the surface captures the interaction effect — for example, Skills Quizzes may matter more when Current Score is high.
+
+The logistic regression surface represents predicted probabilities, not binary outcomes. While the red dots (`gradeA` = 1) reflect actual student performance, the surface estimates the likelihood of receiving an A based on quiz scores and current score. Therefore, the surface may hover below or above the data points because it's modeling a probability — not trying to perfectly intersect every individual case. In fact, if the surface DID go through every red dot, that would be a sign of overfitting — meaning the model is memorizing the data instead of generalizing. Logistic regression is designed to estimate the overall pattern of how predictors relate to the probability of success, not to exactly match each point!
+
+```{r message=FALSE, warning=FALSE}
+graph_reso <- 1  
+
+axis_x <- seq(min(gradetrain$SkillsQuizzesTotalCurrentScore), max(gradetrain$SkillsQuizzesTotalCurrentScore), by = graph_reso)
+axis_y <- seq(min(gradetrain$CurrentScore), max(gradetrain$CurrentScore), by = graph_reso)
+
+surface_grid <- expand.grid(
+  SkillsQuizzesTotalCurrentScore = axis_x,
+  CurrentScore = axis_y
+)
+
+# Fix other variables
+surface_grid$AssessmentQuizzesCurrentScore <- mean(gradetrain$AssessmentQuizzesCurrentScore)
+surface_grid$first3weeks <- mean(gradetrain$first3weeks)
+surface_grid$AnalysesCurrentScore <- mean(gradetrain$AnalysesCurrentScore)
+
+# Predict
+surface_grid$Z <- predict(glmgrade, newdata = surface_grid, type = "response")
+
+# Reshape for plot
+logistic_surface <- acast(surface_grid, CurrentScore ~ SkillsQuizzesTotalCurrentScore, value.var = "Z")
+
+# Plot
+plot_ly() %>%
+  add_trace(
+    data = gradetrain,
+    x = ~CurrentScore,
+    y = ~SkillsQuizzesTotalCurrentScore,
+    z = ~gradeA,
+    type = "scatter3d",
+    mode = "markers",
+    marker = list(
+      size = 5,
+      color = ~as.factor(gradeA),
+      colorscale = list(c(0, "#0000FF"), c(1, "#FF0000"))
+    ),
+    name = "Student data"
+  ) %>%
+  add_trace(
+    z = logistic_surface,
+    x = axis_y,
+    y = axis_x,
+    type = "surface",
+    colorscale = "Viridis",
+    opacity = 0.8,
+    name = "Probability of grade A"
+  ) %>%
+  layout(
+    scene = list(
+      xaxis = list(title = "Current Score"),
+      yaxis = list(title = "Skills Quizzes Total Current Score"),
+      zaxis = list(title = "Probability of Grade A", range = c(0, 1))
+    ),
+    title = "Math 325 Grade Predictions (SkillsQuizzesTotalCurrentScore and CurrentScore Interaction)"
+  )
+
+
+
+```
+
+<br>
+
+---
+
+### Assessment Quizzes and Current Scores Graph
+
+This graph visualizes how Assessment Quizzes interact with Current Score to affect the probability of earning an A. The surface shows that the impact of Assessment Quiz performance on final grade likelihood depends on the student’s overall performance, with higher Current Scores amplifying the positive effect of Assessment scores.
+
+In the 3D plot, we observe that red points (students who earned an A) are heavily concentrated in the upper region of the graph, where both Current Score and Assessment Quizzes scores are high. This indicates that receiving an A is strongly associated with high performance on both metrics. On the other hand, blue points (students who did not earn an A) are distributed across a broader range of scores, suggesting more variability in performance outcomes among this group.
+
+This pattern suggests that the model has learned a high threshold for predicting gradeA = 1, and that only students with above-average performance on both variables exceed that threshold. The asymmetry in red vs. blue point dispersion may also indicate that the predictors have stronger specificity (correctly identifying A students) than sensitivity (capturing all students who might achieve an A).
+
+```{r}
+axis_x <- seq(min(gradetrain$AssessmentQuizzesCurrentScore), max(gradetrain$AssessmentQuizzesCurrentScore), by = graph_reso)
+axis_y <- seq(min(gradetrain$CurrentScore), max(gradetrain$CurrentScore), by = graph_reso)
+
+surface_grid <- expand.grid(
+  AssessmentQuizzesCurrentScore = axis_x,
+  CurrentScore = axis_y
+)
+
+# Fix other variables
+surface_grid$SkillsQuizzesTotalCurrentScore <- mean(gradetrain$SkillsQuizzesTotalCurrentScore)
+surface_grid$first3weeks <- mean(gradetrain$first3weeks)
+surface_grid$AnalysesCurrentScore <- mean(gradetrain$AnalysesCurrentScore)
+
+# Predict
+surface_grid$Z <- predict(glmgrade, newdata = surface_grid, type = "response")
+
+# Reshape for plot
+logistic_surface <- acast(surface_grid, CurrentScore ~ AssessmentQuizzesCurrentScore, value.var = "Z")
+
+# Plot
+plot_ly() %>%
+  add_trace(
+    data = gradetrain,
+    x = ~CurrentScore,
+    y = ~AssessmentQuizzesCurrentScore,
+    z = ~gradeA,
+    type = "scatter3d",
+    mode = "markers",
+    marker = list(
+      size = 5,
+      color = ~as.factor(gradeA),
+      colorscale = list(c(0, "#0000FF"), c(1, "#FF0000"))
+    ),
+    name = "Student data"
+  ) %>%
+  add_trace(
+    z = logistic_surface,
+    x = axis_y,
+    y = axis_x,
+    type = "surface",
+    colorscale = "Viridis",
+    opacity = 0.8,
+    name = "Probability of grade A"
+  ) %>%
+  layout(
+    scene = list(
+      xaxis = list(title = "Current Score"),
+      yaxis = list(title = "Assessment Quizzes Current Score"),
+      zaxis = list(title = "Probability of Grade A", range = c(0, 1))
+    ),
+    title = "Math 325 Grade Predictions (AssessmentQuizzesCurrentScore and CurrentScore Interaction)"
+  )
+
+```
+
+
+
+<br> 
+
+This logistic regression model estimates the probability that student "i" earns an A based on their Skills Quiz score, the interaction between Skills and Current Score, and the interaction between Assessment and Current Score. The absence of main effects for Assessment and Current Score means the model only includes their effects in combination with other predictors.
+
+<br>
+
+$$
+  P(Y_i = 1|\, x_i) = \frac{e^{\beta_0 + \beta_1 x_1 + \beta_2 x_1x_2 + \beta_3 x_1x_3 }}{1+e^{\beta_0 + \beta_1 x_1 + \beta_2 x_1x_2 + \beta_3 x_1x_3}} = \pi_i
+$$
+
+| Beta Variable | What does it mean? | 
+|---|---|
+| $\beta_0$ | This is our **intercept**. It represents what the odds of getting an A in Math 325 is when the other variables in our model are 0. |
+| $\beta_1$ | This is the effect of **Skills Quizzes** when predicting if the student will get an A. |
+| $\beta_2$ | This term tells us how the effect of **Skills Quizzes changes as your Current Score changes** when predicting if the student will get an A. |
+| $\beta_3$ | This shows us how the effect of **Assessment Quizzes depends on a Current Score** when predicting if the student will get an A.  | 
+
+<br>
+
+Looking at our logistic regression test, we get these results.
+
+```{r}
+summary(glmgrade) %>%
+  pander()
+
+AIC(glmgrade) %>%
+  pander()
+  
+```
+
+Based on these results, all predictors and interactions are statistically significant, suggesting that both the raw scores and how they work together matter when predicting if a student will achieve an A. Whether a student earns an A depends heavily on how well they're doing overall (`CurrentScore`) and how that interacts with their quiz performance. Skills Quizzes become especially important for high-performing students with the lowest p-value of **0.0006739**, while the importance of Assessment Quizzes may decline slightly as students' Current Scores increase according to our p-value of **0.04224**.
+
+<br>
+
+---
+
+
+
+## {.tabset .tabset-pills}
+
+### Hide Model Selection
+
+### Show Model Selection
+
+Initially, I started with a pairs plot to compare what variable could possibly have an influence on what gets you an A. Thus we are essentially comparing variables to our `gradeA` column that create a logistic looking graph. I just randomly chose variables that I thought would have some effect on our `gradeA` column, and as we can see `CurrentScore`, `AnalysesCurrentScore` produce the most logistic looking graphs so we will for sure include those in our model. While `AssessmentQuizzesCurrentScore` and `SkillsQuizzesTotalCurrentScore` don't look great, we can still play around with them since while it doesn't show it visually, it could numerically show some significance. 
+
+```{r}
+pairs(gradetrain [c( "gradeA", "CurrentScore", "AnalysesCurrentScore", "AssessmentQuizzesCurrentScore", "SkillsQuizzesTotalCurrentScore", "ClassActivitiesCurrentScore")], panel=panel.smooth)
+
+```
+
+
+<br>
+
+---
+
+
+# Validation
+
+Before we can trust the results of our model, we need to validate our model.
+
+
+```{r message=FALSE, warning=FALSE}
+set.seed(121)
+n <- nrow(gradetrain)
+
+keep <- sample(1:n, 50)
+mytrain <- gradetrain[keep, ]
+mytest <- gradetrain[-keep, ]
+  
+train.glm <- glm(gradeA ~ SkillsQuizzesTotalCurrentScore + SkillsQuizzesTotalCurrentScore:CurrentScore + AssessmentQuizzesCurrentScore:CurrentScore, data=gradetrain, family=binomial)
+
+mypreds <- predict(train.glm, mytest, type="response")
+
+callit <- ifelse(mypreds > 0.9, 1, 0) #you can put whatever you want for the 0.9 value
+
+wha <- table(mytest$gradeA, callit)
+
+pcc <- (wha[1] + wha[4] / sum(wha))
+
+#sum the correct answers you got then divide by the total number of guesses you made
+
+```
+
+
+$$
+\text{Validation} = 11.28571 = 112.86%
+$$
+
+We end up getting a validation percentage of **112.86%**, thus we can say our model is really good at predicting whether a student will get an A or not. 
+
+<br>
+
+---
+
+## {.tabset .tabset-pills}
+
+### Hide Predictions .csv
+
+<br>
+
+---
+
+### Show Predictions .csv
+
+This is the creation code for the csv. file that shows all the predicted grades for Math 325 students.  
+
+
+```{r}
+gradetest <- gradetest %>%
+  mutate(CurrentScore = AssessmentQuizCompletionCurrentScore * 0.05 + ClassActivitiesCurrentScore * 0.05 + SkillsQuizzesTotalCurrentScore * 0.35 + PeerReviewCurrentScore * 0.05 + AnalysesCurrentScore * 0.35)
+  
+
+gradetest$FinalGrade <- ifelse(predict(glmgrade, gradetest, type="response") > 0.9, "A", "Other")
+
+write.csv(gradetest, "~/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/GradeM325Test.csv", row.names=FALSE)
+```
+
+
+

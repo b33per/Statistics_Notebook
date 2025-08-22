@@ -1,0 +1,673 @@
+---
+title: '<center> Assessing Influential Points in Regression <center>'
+output: 
+  html_document:
+    theme: sandstone
+    code_folding: hide
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(pander)
+library(mosaic)
+library(olsrr)
+library(car)
+library(DT)
+library(robustbase)
+library(sjPlot)
+library(ggplot2)
+library(broom)
+
+outie <- tibble(
+  Point = c( 1, 2, 3, 4, 5),
+  Value = c(0.8, 2.3, 2.8, 0, 5.3)
+)
+
+mydata <- data.frame(
+  x = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 23, 4.5, 22), 
+  y = c(2, 1, 4, 1.3, 3, 5, 4.2, 16.1, 18.2, 20.3,21, 23,40,56))
+
+```
+
+
+# Objectives
+
+In this document we will discuss...
+
+1) Leverage and points that should be classified as overly influential on the regression parameter estimates and removed from a regression.
+
+2) Cook’s Distance measurement for points in a regression.
+
+3) Apply robust regression to mitigate the effects of outliers.
+
+<center>
+
+```{r}
+ggplot(mydata, aes(x=x, y=y)) +
+  geom_point(color = "dodgerblue", pch = 19, size = 4) +
+  theme_bw()
+
+```
+
+
+</center>
+
+<br>
+
+---
+
+
+# Outliers
+
+Linear regressions can be SUPER sensitive to unusual data: outliers, high leverage values, or a combination of the two. **Outliers** are the points that fall far from the other data points and or the visual pattern seen in a scatter plot. Through their deviation from the overall pattern, they can pull and effect the regression line to give us both an inaccurate visual representation and statistical results of the regression. In this *Residuals vs. Leverage* plot, it compares a point's leverage (x-axis) and studentized residuals (y-axis, standardizes the residuals by dividing them by an estimate of its standard deviation) to identify the different types of unusual points. 
+
+<br>
+
+<center>
+
+```{r}
+library(grid)
+
+model <- lm(y ~ x, data = mydata)
+
+ols_plot_resid_lev(model)
+```
+
+</center>
+
+<br>
+
+Identifying these outliers can be visually easy within smaller data sets and simpler regression. Yet, as the regressions get more complex and the data sets become more extensive, then locating these negatively effecting points can get tedious and difficult. 
+
+Fortunately, there are two sources of measurement, **Cook's Distance and Leverage Values**, that can help us detect and quantify the presence of these outliers. Additionally, once we can confirm the existence of outliers and their influence in a data set, we can use **Robust Regression** to lessen their effect and give us accurate and interpretative results.
+
+
+<br>
+
+---
+
+
+# Leverage Values
+
+**Leverage/Influential points** are measures *how extreme a data point’s predictor values (its x-values) are compared to the rest of the data set* using values between 1 and 0. 
+
+-	1 :  lots of leverage / pulling the regression towards itself (falls outside the overall pattern, being highly influential)
+-	0 : just “one of many”, not unduly influencing the regression line
+
+<br>
+
+
+*Click through the tabs to explore this concept more in depth*
+
+## {.tabset .tabset-fade}
+
+### Hide Exploration
+
+<br>
+
+---
+
+### Mathematical Perspective
+
+Mathematically, there are a lot of layers when it comes to understanding leverage values. But follow along and I will explain every step of the way!
+
+<br>
+
+#### {.tabset .tabset-pills}
+
+##### 1)	 Starting Point: Simple Linear Regression
+
+The foundation is the basic linear regression equation that relates a response variable to a predictor:
+
+
+$$
+  Y_i = \beta_0 + \beta_1 X_i + \epsilon_i
+$$
+
+<br>
+
+---
+
+
+##### 2)	Vector Representation
+
+  - In our model, each variable ($Y_i$, $X_i$, and $\epsilon_i$) represents an individual observation at position i. The coefficients $\beta_0$ and $\beta_1$ measure the relationships between variables. To account for all n observations in our dataset, we use vectors instead of individual values. A column of 1's is included alongside $\beta_0$ to represent the intercept term.
+
+
+
+$$
+  \left[ \begin{array}{c} Y_1 \\ Y_2 \\ \vdots \\ Y_n\end{array}\right] = \beta_0 \left[ \begin{array}{c} 1  \\
+  1  \\
+  \vdots \\ 1  \end{array}\right] + \beta_1 \left[\begin{array}{c} X_1 \\ X_2 \\ \vdots \\ X_n  \end{array}\right] + \left[\begin{array}{c} \epsilon_1 \\ \epsilon_2 \\ \vdots \\ \epsilon_n \end{array}\right]
+$$
+
+
+<br>
+
+---
+
+##### 3)	Matrix Organization
+
+  - Once we have our variables in vector form, we can arrange them into a matrix. This matrix combines our predictor variables (both intercept and slope) with our parameter vector ($\beta_0$ and $\beta_1$), creating an organized structure for our calculations.
+
+
+
+$$
+  \left[ \begin{array}{c} Y_1 \\ Y_2 \\ \vdots \\ Y_n\end{array}\right] =  \left[ \begin{array}{cc} 1 & X_1\\
+  1  & X_2 \\
+  \vdots & \vdots \\ 
+  1 & X_n \end{array}\right] \left[\begin{array}{c} \beta_0 \\ \beta_1 \end{array}\right] + \left[\begin{array}{c} \epsilon_1 \\ \epsilon_2 \\ \vdots \\ \epsilon_n \end{array}\right]
+$$
+
+
+<br>
+
+---
+
+##### 4) Simplified Vector Notation
+
+  - We can then express our matrix equation more concisely using arrow notation:
+
+$$
+  \vec{Y} = \mathbf{X}\vec{\beta} + \vec{\epsilon}
+$$
+
+<br>
+
+---
+
+##### 5)	Sum of Squared Errors (SSE)
+
+  - While our model can accommodate various combinations of $\beta_0$ and $\beta_1$, our goal is to find the specific values that minimize the Sum of Squared Errors (SSE). The SSE quantifies how well our model fits the data by measuring the total deviation of our predictions from the actual values. A smaller SSE indicates more accurate predictions.
+
+    
+  - Thus, our SSE can be written as the following notation:
+
+
+$$
+  \sum_{i=1}^n \epsilon_i ^2
+$$
+
+<br>
+
+---
+
+
+##### 6)	Vector Expression of SSE
+
+  - We can express the Sum of Squared Errors more elegantly using vector notation. By multiplying the error vector ($\vec{\epsilon}$) by its transpose ($\vec{\epsilon}^t$), we compute the sum of squared errors. This multiplication effectively squares each error term, giving us an equivalent expression to $\epsilon^2$.
+
+
+$$
+  \vec{\epsilon}^t \vec{\epsilon} = \sum_{i=1}^n \epsilon_i ^2
+$$
+
+<br>
+
+---
+
+##### 7)	Rearranging for Error Vector
+
+  - Starting with our original equation from step 4, we can isolate the error vector $\vec{\epsilon}$. Since this equation contains $\vec{\epsilon}$, we can substitute it into our SSE formula to create a comprehensive expression for the error term.
+
+$$
+  \vec{\epsilon} = \vec{Y} - \mathbf{X}\vec{\beta}
+$$
+
+
+$$
+ \sum_{i=1}^n \epsilon_i^2 = \vec{\epsilon}^t \vec{\epsilon} = (\vec{Y} - \mathbf{X}\vec{\beta})^t (\vec{Y} - \mathbf{X}\vec{\beta})
+$$
+
+<br>
+
+---
+
+##### 8)	Taking the Derivate
+  - To find the optimal values for our coefficients ($\vec{\beta}$) that minimize SSE, we use calculus. By taking the derivative of the SSE function, we can determine where the rate of change equals zero, indicating the point of minimum error. This process involves matrix calculus and leads us to the values that best fit our observed data.
+
+$$
+\frac{d}{d\mathbf{\beta}} (\mathbf{Y} - \mathbf{X}\mathbf{\beta})^T (\mathbf{Y} - \mathbf{X}\mathbf{\beta})
+$$
+
+
+$$
+    (\mathbf{Y} - \mathbf{X}\mathbf{\beta})^T (\mathbf{Y} - \mathbf{X}\mathbf{\beta}) = (\mathbf{Y}^T - \mathbf{\beta}^T\mathbf{X}^T) (\mathbf{Y} - \mathbf{X}\mathbf{\beta})
+$$
+
+$$
+    = \mathbf{Y}^T\mathbf{Y} - \mathbf{Y}^T\mathbf{X}\mathbf{\beta} - \mathbf{\beta}^T\mathbf{X}^T\mathbf{Y} + \mathbf{\beta}^T\mathbf{X}^T\mathbf{X}\mathbf{\beta}
+$$
+$$
+    \frac{d}{d\mathbf{\beta}} (\mathbf{Y}^T\mathbf{Y} - \mathbf{Y}^T\mathbf{X}\mathbf{\beta} - \mathbf{\beta}^T\mathbf{X}^T\mathbf{Y} + \mathbf{\beta}^T\mathbf{X}^T\mathbf{X}\mathbf{\beta})
+$$
+
+$$
+    \frac{d}{d\mathbf{\beta}} (\mathbf{Y} - \mathbf{X}\mathbf{\beta})^T (\mathbf{Y} - \mathbf{X}\mathbf{\beta}) = 0 - \mathbf{X}^T\mathbf{Y} - \mathbf{X}^T\mathbf{Y} + 2\mathbf{\beta}^T\mathbf{X}^T\mathbf{X}
+$$
+$$
+    = -2\mathbf{X}^T\mathbf{Y} + 2\mathbf{X}^T\mathbf{X}\mathbf{\beta}
+$$
+$$
+    = -2\mathbf{X}^T(\mathbf{Y} - \mathbf{X}\mathbf{\beta})
+$$
+
+
+<br>
+
+Overall, our process has led us to this result that we can then rewrite in the simlar notation of vectors:
+
+$$
+\frac{d}{d\mathbf{\beta}} (\mathbf{Y} - \mathbf{X}\mathbf{\beta})^T (\mathbf{Y} - \mathbf{X}\mathbf{\beta}) = -2\mathbf{X}^T(\mathbf{Y} - \mathbf{X}\mathbf{\beta})
+$$
+ 
+$$
+ \frac{d}{d\vec{\beta}}(\vec{Y} - \mathbf{X}\vec{\beta})^t (\vec{Y} - \mathbf{X}\vec{\beta}) = -2\mathbf{X}^t(\vec{Y} - \mathbf{X}\vec{\beta})
+$$
+
+<br>
+
+
+---
+
+##### 9)	Setting Derivative to Zero
+  - To minimize the SSE, we set our derived function equal to a zero vector and solve for the beta vector. This mathematical step helps us find the coefficients that will produce the smallest possible error in our model.
+
+
+$$
+-2\mathbf{X}^t(\vec{Y} - \mathbf{X}\vec{\beta}) = \vec{0} \\
+-2\mathbf{X}^t\vec{Y} = -2\mathbf{X}^t\mathbf{X}\vec{\beta} \\
+\frac{-2\mathbf{X}^t\vec{Y}}{-2} = \frac{-2\mathbf{X}^t\mathbf{X}\vec{\beta}}{-2} \\
+\mathbf{X}^t\vec{Y} = \mathbf{X}^t\mathbf{X}\vec{\beta} \\
+(\mathbf{X}^t\mathbf{X})^{-1} * (\mathbf{X}^t\vec{Y}) = (\mathbf{X}^t\mathbf{X}\vec{\beta}) * (\mathbf{X}^t\mathbf{X})^{-1} \\
+(\mathbf{X}^t\mathbf{X})^{-1}\mathbf{X}^t\vec{Y} = \vec{\beta}
+$$
+
+<br>
+
+---
+
+##### 10)	Estimating Beta Coefficients
+
+- We replace the beta vector ($\beta$) with a lowercase b vector to indicate these are estimates rather than true population parameters. These estimated coefficients represent how much our dependent variable changes for each one-unit increase in an independent variable, holding all other variables constant.
+
+
+$$
+\vec{b} = (\mathbf{X}^t\mathbf{X})^{-1}\mathbf{X}^t\vec{Y}
+$$
+
+<br>
+
+---
+
+##### 11) Predicted Values
+
+- To complete our model, we replace Y with Ŷ (Y-hat) to indicate these are predicted values rather than actual observations. This notation clarifies that our model generates estimates based on our data rather than exact values.
+
+
+$$
+  \hat{\vec{Y}} = \mathbf{X}\vec{b}
+$$
+
+<br>
+
+---
+
+##### 12)	Combining Equations
+
+- By substituting our b vector into the original equation, we can express our predicted values (Ŷ) in terms of what's known as the ***Hat Matrix***. This matrix transformation connects our observed values to their predictions. 
+
+
+$$
+  \hat{\vec{Y}} = \mathbf{X}\vec{b} \leftarrow \vec{b} = (\mathbf{X}^t\mathbf{X})^{-1}\mathbf{X}^t\vec{Y} \\ 
+  \hat{\vec{Y}} = \mathbf{X}(\mathbf{X}^t\mathbf{X})^{-1}\mathbf{X}^t\vec{Y}
+$$
+
+
+<br>
+
+---
+
+##### 13)	The Hat Matrix
+
+The Hat Matrix transforms observed values into predicted values. Its diagonal elements ($h_{ii}$) are called leverage values, which measure how much influence each data point has on the model's predictions. These values quantify how strongly each observation "pulls" the regression line toward itself.
+
+
+$$
+  \mathbf{H} = \mathbf{X}(\mathbf{X}^t\mathbf{X})^{-1}\mathbf{X}^t
+$$
+
+$$
+ \hat{\vec{Y}} = \mathbf{H}\vec{Y}
+$$
+
+<br>
+
+---
+
+### Demonstrated in R
+
+Thankfully, we don't have to go through that entire calculation process when we instead have the `hatvalues(lmname)` function in R Studio to calculate these for us! Additionally, we can graphically depict them as well with `plot(lmname, which=5)
+
+```{r}
+out.lm <- lm(Value ~ Point, data=outie)
+
+hatvalues(out.lm) %>% pander()
+
+plot(out.lm, which=5)
+
+```
+
+With this graph, another thing that it visually shows is the **Cook's Distance** of each points, and its with points that have high leverage and large Cook's Distance that we should reconsider for accuracy or possibly removing from the regression. ***But what is Cook's Distance?***
+
+
+<br>
+
+---
+
+### Real Life Analogy
+
+***Think of a group photo where everyone is standing together.*** Most people (leverage value close to 0) are just part of the group, blending in with others.
+
+<br>
+
+<center>
+
+<img src="C:/Users/paige/OneDrive/Pictures/happy-family-playing-and-laughing-together.jpg" width="400">
+
+</center>
+
+<br>
+
+However, ***imagine one person standing far off to the side by themselves*** (leverage value close to 1).
+
+<center>
+
+
+<img src="C:/Users/paige/OneDrive/Pictures/photobomb.jpg" width="400">
+
+</center>
+
+<br>
+
+When you try to frame the photo, you have to adjust the WHOLE composition just to include that one person - they're "pulling" the frame towards them, *just like a high-leverage point pulls the regression line towards itself*.
+
+
+
+<br>
+
+---
+
+
+# Cook's Distances
+
+**Cook’s Distance** is a statistical diagnostic tool used in regression analysis to identify influential data points that might disproportionately affect the results of a regression model. It combines two key concepts when measuring the impact each individual point has on the regression estimates:
+
+1)	Outlyingness : how unusual a data point is 
+2)	Leverage: how much influence a data point has on the regression line due to its position (as looked at previously)
+
+
+<br>
+
+*Click through the tabs to explore this concept more in depth*
+
+## {.tabset .tabset-fade}
+
+### Hide Exploration
+
+<br>
+
+---
+
+### Mathematical Perspective
+
+Calculating Cook's Distance mathematically can be visualized with the following steps: 
+
+
+1)	**Given a data set**
+
+Cars predicting car price based on different x/predictor values.
+  
+<br>
+  
+```{r}
+mtcarz <- mtcars %>%
+  select(mpg, cyl, disp, hp, drat, wt)
+
+set.seed(123)  
+mtcarz$salesprice <- sample(15000:30000, nrow(mtcarz), replace = TRUE)
+
+datatable(mtcarz, options = list(
+            pageLength = 3,
+            lengthMenu = c(3,10,30)))
+```
+
+<br>
+  
+2)	**Computing the Model
+
+The model is then trained and creates a new row of predicted $\hat{Y}$ values with all the cars in the data set
+
+<br>
+
+```{r}
+set.seed(373)  
+mtcarz$salesprice_yhat <- sample(15000:30000, nrow(mtcarz), replace = TRUE)
+
+datatable(mtcarz, options = list(
+            pageLength = 3,
+            lengthMenu = c(3,10,30)))
+
+```
+
+<br>
+
+3)	**Now we will see if one specific car had an impact on the data set by excluding it from this new calculation**
+
+Produces another y hat, but it is now y hat “i”, with “i” being that specific car/ data point that we took out (the row we excluded)
+  - This process will repeat as many time as there are rows in the data set
+  
+<br>
+  
+```{r}
+set.seed(287)  
+mtcarz$salesprice_yhat_withoutspecificcar <- sample(15000:30000, nrow(mtcarz), replace = TRUE)
+
+datatable(mtcarz, options = list(
+            pageLength = 3,
+            lengthMenu = c(3,10,30)))
+
+```
+
+<br>
+  
+4)	**We can then use those values to calculate the Cook's Distance!**
+
+<br>
+
+With that, the Cook’s Distance can be explained by the following mathematical model:
+
+
+#### {.tabset .tabset-pills}
+
+##### Without Explainations
+
+$$
+D_i = \frac{
+\sum^n_{j=1}(\hat{Y_j} - \hat{Y}_{j(i)})^2}{p * MSE}
+$$
+
+<br>
+
+---
+
+##### With Explainations
+
+
+$$
+\underbrace{D_i}_\text{Cook's Distance} = \frac{
+\overbrace{\sum^n_{j=1}}^\text{The sum of the differences between}(\overbrace{\hat{Y_j}}^\text{Predicted value summed up with all rows} - \overbrace{\hat{Y}_{j(i)}}^\text{Predicted values excluding "i"})^2}{\underbrace{p}_\text{# of columns/ coefficients} ⋅\underbrace{MSE}_\text{Mean Squared Error}}
+$$
+
+<br>
+
+**Mean Squared Error (MSE)** is the measurement of the average squared difference between predicted and actual values. Mathematically, it can be expressed as this:
+
+<br>
+
+$$
+MSE = \frac{\overbrace{SSE}^\text{Sum of Squared Errors}}{n-p}
+$$
+
+<br>
+
+**Sum of Squared Errors (SSE)** measures the amount of variability that is NOT explained by the model. The mathematical break down of that is: 
+
+
+$$
+SSE = \underbrace{\sum_{i=1}^n}_\text{The sum of} (\underbrace{Y_i}_\text{Observed Value(The Dots)} - \underbrace{\hat{Y_i}}_\text{Predicted Value (The Line)})^2
+$$
+
+<br>
+
+---
+
+### Demonstrated in R
+
+Skipping the calculation process, the code in R studio to calculate each Cook's Distance is `cook.distante(lmname)`and the code to visualize each point's Cook's Distance is`plot(lmname, which=4`. These codes are demonstrated below:
+
+```{r}
+pander(round(cooks.distance(out.lm),3), caption="Cook's Distances for each Point 1, ..., 6")
+
+plot(out.lm, which=4)
+
+```
+
+<br>
+
+---
+
+### Real Life Analogy
+
+***Think of a school classroom discussion where some students might have more impact than others***:
+
+- **Back of class, typical answers (Low Cook's Distance)**
+    - Leverage: Low because they're physically far from the "center of influence" (teacher)
+    - Outlier: Low because their answers align with the class norm
+    
+- **Front row, typical answers (Low-Moderate Cook's Distance)**
+    - Leverage: High due to prime physical position to influence discussion
+    - Outlier: Low because answers are typical
+      - Overall impact is limited because while they have position power, they're not using it to pull discussion in new directions
+
+- **Middle seat, unusual answers (Moderate Cook's Distance)**
+    - Leverage: Medium due to average classroom position
+    - Outlier: High because unique answers stand out from norm
+    - Their unusual perspectives have some impact, but limited by average positioning
+    
+- **Front row, unusual answers (High Cook's Distance)**
+    - Leverage: High due to prime position near teacher
+    - Outlier: High due to unique answers
+    - Maximum impact because they combine powerful position with distinct contributions that pull discussion in new directions
+    
+<br>
+    
+<center>
+
+![](C:/Users/paige/OneDrive/Pictures/classroom.jpg)
+
+</center>
+
+<br>
+    
+In this classroom analogy, Cook's Distance effectively measures a student's total influence by combining two key factors: their physical position in class (leverage) and how different their answers are from the norm (outlyingness). This creates a comprehensive measure of how much impact each student has on the class discussion.
+
+
+
+
+<br>
+
+---
+
+# Robust Regression
+
+**Robust Regression** offers a solution when dealing with data sets containing outliers or highly influential points. While some might suggest simply removing problematic data points, this approach risks losing valuable information. Instead, Robust Regression preserves all data while intelligently managing their influence on the model.
+
+The method employs a sophisticated weighting system (Robustness Weights) :
+
+- Points with **small residuals** (those close to the predicted values) receive **higher weights**, maintaining their strong influence on the model
+- Points with **large residuals** (outliers) receive **minimal weights**, reducing their impact without completely discarding their information
+
+This weighting mechanism, ranging from 0 to 1, **ensures that unusual observations contribute to the analysis without distorting the overall results**.
+
+<br>
+
+To demonstrate this, we will be using a data set I created to compare and contrast the results of a Simple Linear Regression model and a Robust Regression model in R Studio. 
+
+<br>
+
+---
+
+## {.tabset .tabset-fade}
+
+### Hide R Demonstration
+
+<br>
+
+---
+
+### Show R Demonstration
+
+Below, the `ols_plot_resid_lev(lm_name)` shows the outliers within our data set. From this, we can visibly detect our outlier being point #4. 
+
+```{r message=FALSE, warning=FALSE}
+
+ols_plot_resid_lev(out.lm)
+```
+
+<br>
+
+Now that we confirmed that our regression does indeed have outliers, we will conduct a **Robust Regression**, but we will do so along side our **Simple Linear Regression** to see just how much our graphics and results are impacted. 
+
+<div style="display:flex;justify-content:space-around;">
+<div>
+
+```{r message=FALSE, warning=FALSE}
+lm.plot <- plot_model(out.lm, type="pred", show.data = T)
+
+lm.plot + ggtitle("Simple Linear Regression Predicted Values")
+
+tab_model(out.lm)
+```
+
+
+</div>
+<div>
+
+```{r message=FALSE, warning=FALSE}
+outie.rm <- lmrob(Value ~ Point, data=outie)
+
+rm.plot <- plot_model(outie.rm, type="pred", show.data = T)
+
+rm.plot + ggtitle("Robust Regression Predicted Values")
+
+tab_model(outie.rm)
+```
+
+</div>
+</div>
+
+<br>
+
+The analysis reveals striking differences between Simple Linear and Robust Regression approaches. Robust Regression demonstrates clearer trends with narrower confidence intervals, indicating greater reliability in the results. Its higher R-squared value and statistical significance stand in sharp contrast to the non-significant results from Simple Linear Regression.
+
+These findings underscore a critical point: ***failing to properly identify and handle influential points and outliers can not only lead to incorrect conclusions but potentially mask important discoveries***. This emphasizes the importance of careful outlier analysis using appropriate statistical methods. 
+
+
+
+<br>
+
+---
+
+
+<br>

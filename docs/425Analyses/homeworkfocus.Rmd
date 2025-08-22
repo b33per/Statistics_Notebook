@@ -1,0 +1,291 @@
+---
+title: "<center> Homework Completeness or Homework Correctness? </center>"
+output: 
+  html_document:
+    theme: spacelab
+    code_folding: hide
+---
+
+```{r message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(haven)
+
+gradesmath100b <- read.csv("~/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/math100bgrades.csv", stringsAsFactors=TRUE)
+
+```
+
+<center>
+
+![](C:/Users/paige/OneDrive/Pictures/gradingpapers.jpg)
+
+</center>
+
+<br>
+
+# Overview
+
+***How do homework scores and homework grading style—completeness (COM) vs. correctness (COR)—predict final exam performance in BYU-Idaho's Math 100B?*** More specifically, does the effect of homework grades on final exam scores vary by grading type? To address these questions, we used a multiple linear regression model to analyze the data.
+
+For students in the completeness (COM) group, our model shows that for **every 1-point increase in homework score, their final exam score increases by approximately 0.78 points** ($\beta_1$ = 0.7812, p < 2.28e−08). This strong positive relationship suggests that when homework is graded for completion, students see greater benefits from increased assignment effort.
+
+In contrast, students in correctness-focused (COR) sections begin with significantly higher baseline scores, though the effect of each homework point is less pronounced. The model estimates that with a homework grade of 0, a COR student's final exam score would be 54.6% (46.83 + 7.232 = 54.06, $\beta_2$ = 46.83, p = 0.0023). For **every 1-point increase in homework score, their final exam score increases by approximately 0.35 points** (0.7812 + (-0.4312) = 0.35, $\beta_3$ = −0.4312, p = 0.0107). This indicates that while COR students' final exam scores are less sensitive to homework grade changes, they consistently outperform COM students regardless of homework performance.
+
+As a concrete example, for students in the correctness group (COR), our model predicts that a homework score of 90 corresponds to a final exam score of approximately **85.56**, while in the completeness group (COM), the predicted score is about **77.54**. This difference suggests that grading based on correctness may lead to stronger performance on cumulative assessments like the final exam.
+
+These trends are evident in our scatter plot. The COM line (light blue) shows a steep rise from a lower starting point, while the COR line (dark blue) begins higher but climbs more gradually. In practical terms, students in COR classes—who must meet standards of correctness rather than just completion—tend to be better prepared for the cumulative final exam.
+
+While the data largely meets the assumptions of linear regression, we should note any minor deviations when generalizing these results to future classes. Nevertheless, our findings suggest that instructors should consider correctness-based grading as a strategy to promote deeper learning and long-term retention.
+
+<br>
+
+---
+
+# Background
+
+As a Teacher's Assistant at Brigham Young University-Idaho, I have observed various teaching styles, engagement tactics, and grading standards while working with professors who teach Beginning Algebra (MATH 100B).
+
+MATH 100B serves as a foundational course at BYU-Idaho, preparing students with essential skills for advanced mathematics courses. After grading countless homework assignments, I began to wonder: ***To what extent do homework completion and correctness influence students' homework grades and final exam performance in MATH 100B?***
+
+<br>
+
+`Click the tab to explore the data used for the study.`
+
+---
+
+## {.tabset .tabset-pills}
+
+### Hide Data
+
+<br>
+
+---
+
+### Show Data
+
+This data is taken from Math 100B students, noting these three things:
+
+- `homeworkfocus`: How the homework was graded in that student's class 
+  - `COM` : Completeness
+  - `COR` : Correctness
+- `homeworkscore` : A student's overall homework score
+- `finalexamscore`: A student's final exam score
+
+The data presented was collected during the year and semester track, but that is undocumented to keep these students and their professors anonymous. 
+
+<br>
+
+```{r}
+datatable(gradesmath100b)
+```
+
+
+<br>
+
+---
+
+# Visually Modeling the Data
+
+Based on what we can see from the graphic below, **the students who have their homework assignments graded based on correctness seem to outperform the students with homework assignments graded by completeness.** While the steepness of the `COR` group is not as steep as the `COM` group, showing steady improvement in the `COR` group and drastic improvement in the `COM` group, the `COR` group still seems to have an extremely better scores even when their students homework scores are low. Even at a homework score of 60%, the `COR` group of students still seem to score around 75% on their final exam scores while the `COM` group just barely grazes over a 50% final exam score. 
+
+<br>
+
+`Hover over each dot (representing a student) to see their specifics.`
+
+<br>
+
+```{r}
+gradelm <- lm(finalexamscore ~ homeworkscore + homeworkfocus + homeworkscore:homeworkfocus, data= gradesmath100b)
+
+b <- coef(gradelm)
+
+gradeplot <- ggplot(gradesmath100b, aes(x=homeworkscore, y= finalexamscore, color = homeworkfocus)) +
+  geom_point(size=1.5, alpha =2) +
+  stat_function(fun=function(x) b[1] + b[2]*x, color="dodgerblue")+
+stat_function(fun=function(x) (b[1]+b[3]) + (b[2]+b[4])*x, color="darkblue")+
+scale_color_manual(name = "Homework Focus", 
+values = c("dodgerblue", "darkblue")) + 
+  labs(title="Homework Completeness vs. Correctness: Final Exam Scores of BYU-Idaho Math 100B Students", x = "Homework Grade", y = "Final Exam Grade")+ 
+  theme_minimal()
+
+ggplotly(gradeplot)
+```
+
+
+<br>
+
+---
+
+## {.tabset .tabset-fade}
+
+### Model Expressed Mathematically 
+
+To predict final exam scores, we used a mathematical model that accounts for both homework scores and grading style (focus). This model is shown below: 
+
+<center>
+
+$$\underbrace{Y_i}_\text{Final Exam Grade} = \beta_0 + \beta_1 \underbrace{X_{i1}}_\text{Homework Grade} + \beta_2 \underbrace{X_{i2}}_\text{Homework Focus} + \beta_3 \underbrace{X_{i1}X_{i2}}_\text{Interaction between Homework Grade & Focus} + \epsilon_i \text{where} ~ N(0, \sigma^2)$$
+
+<br>
+
+$$\underbrace{X_{3i}}_\text{Homework Focus} =  \left\{\begin{array}{ll} 1, & \text{Completeness (COM)} \\ 0, & \text{Correctness (COR)} \end{array}\right.$$
+
+<br>
+
+| Part | What it does |
+| --- | --- |
+| $\beta_0$ (*Intercept*) | **Sets the starting point of the line** on the graph for all the predictors ($X_{i1}$, $X_{i2}$, etc.). |
+| $\beta_1$ (*Effect of `Homework Grade`*)| Determines **the change in Final Exam Grades** ($Y_i$) associated with one-unit increase in Homework Grade. (independently from the other predictors) |
+| $\beta_2$ (*Effect of `Homework Focus`*) | Determines **the changes in $Y_i$** depending on the **homework focuses**. |
+| $\beta_3$ (*Interaction between `Homework Grade` and `Homework Focus`*)| Determines the **combined effect of homework grade and homework focus** on final exam grades, quantifying the relationship between homework grades and final exam scores depends on the homework focus.|
+
+</center>    
+
+Having defined our mathematical model, we must now determine whether these variables significantly predict final exam scores. 
+
+<br>
+
+---
+
+### Testable Statements
+
+Our key variables for predicting final exam scores are the effects of homework grading style and how homework scores interact with grading focus. We will test these variables through two hypotheses: 
+
+$$ H_0 : \beta_2 = 0 \\
+H_a : \beta_2 \neq 0 $$
+
+For the first hypothesis, our null hypothesis ($H_0$) states there is no difference in final exam scores between the homework grading focuses, while our alternative hypothesis ($H_a$) states that there is a difference in final exam scores between the grading focuses.
+
+<br>
+
+$$ H_0 : \beta_3 = 0 \\
+H_a : \beta_3 \neq 0 $$
+
+For the second hypothesis, our null hypothesis states that each homework point has no change in effect on final exam scores between grading focuses. The alternative hypothesis states that each homework point has a change in effect on final exam scores between grading focuses.
+
+<br>
+
+Finally, to test whether each variable significantly predicts final exam scores, we must establish a level of significance ($\alpha$) to compare against our probability values (p-values). 
+
+- if our p-value is lower, our alternative belief is true
+- if our p-value is higher, our initial believe is true. 
+
+$$\alpha = 0.05$$
+
+<br>
+
+---
+
+### Testing Data with Linear Regression
+
+With our model and hypotheses established, we can now test our data with a linear regression test. 
+
+```{r}
+summary(gradelm) %>%
+pander()
+```
+
+<br>
+
+Since both p-values fall below our level of significance, this demonstrates a significant difference in final exam scores between the two variables. The data shows a 46.83% difference in final exam scores between homework grading focuses. Additionally, for each homework point increase, the average final exam score percentage rises by 0.35%, depending on the homework focus.
+
+<br>
+
+$$\underbrace{\beta_2}_\text{homeworkfocusCOR} \text{ p-value} = 0.002322 < \alpha \\ \underbrace{\beta_3}_\text{homeworkscore:homeworkfocusCOR} \text{ p-value} = 0.01069 < \alpha $$
+
+<br>
+
+With our estimate values of each variable/ beta, we can update our mathematical equation to calcuate a predicted final exam score.
+
+<br>
+
+$$\underbrace{\hat{Y_i}}_\text{Predicted Final Exam Grade} = 7.232 + 0.7812 \underbrace{X_{i1}}_\text{Homework Grade} + 46.83 \underbrace{X_{i2}}_\text{Homework Focus} + (-0.4312) \underbrace{X_{i1}X_{i2}}_\text{Interaction between Homework Grade & Focus}$$
+
+<br>
+
+Using our mathematical model, we can predict the final exam score of a Math 100B student who received a homework score of 70, which is considered passing at BYU-Idaho. We can also create a confidence interval that estimates where the average final exam score for a Math 100B student falls.
+
+<center>
+
+```{r}
+newdata <- data.frame(
+  homeworkscore = c(70, 70),
+  homeworkfocus = c("COM", "COR"))
+
+preds <- predict(gradelm, newdata = newdata, interval = "confidence") %>%
+  as.data.frame() %>%
+  bind_cols(newdata)
+
+pander(preds)
+
+```
+
+</center>
+
+A student with a homework score of 70 demonstrates the stark difference between correctness-based and completeness-based grading. At BYU-Idaho, a grade above 70 is considered a C-. With **correctness-based** grading, this student would pass the class, achieving a predicted final exam score of **78.56** (confidence interval: 72.85–84.27). However, with **completeness-based** grading, the same student would **fail MATH 100B**, with a predicted **final exam score of 61.92**. Even if the student did the best they could, on the higher interval they would still be barely under passing (confidence interval: 55.1–68.73).
+
+<br>
+
+---
+
+### Linear Regression Requirements
+
+Before we can accept the results found in this study, there are a set of requirements the data has to meet that tell us whether or not the linear regression is appropriate for the data. 
+
+<div style="display: flex; justify-content: space-around;gap:35px;">
+  <div>
+The **Residuals versus Fitted Values plot** assesses ***Linear Relation and Constant Variance***.
+  </div> 
+  <div>
+The **Q-Q Residuals plot** assesses **Normal Errors**.  
+  </div> 
+  <div>
+The **Residuals versus Order plot** checks for **Independent Errors**. 
+  </div>
+  </div>
+
+</center>
+
+```{r, fig.width = 10, fig.height= 5}
+par(mfrow=c(1,3))
+
+plot(gradelm, which=1)
+
+qqPlot(gradelm, id=FALSE, main= "Q-Q plot", col="darkblue", col.lines = "dodgerblue", pch = 16)
+
+plot(gradelm$residuals, main="Residuals vs Order")
+```
+
+**Overall, our data meets most of the requirements.** Starting from the left, while the first plot shows data clustered to one side, it still passes because the dots are scattered randomly. The second plot, however, shows dots outside the bounds of normality (the light blue region) and therefore fails this requirement, as the bend indicates left-skewed data. This skewness is not unexpected, since MATH 100B is structured to help students achieve higher scores. As for the third plot, the random scattering of dots with no clear pattern indicates that the third requirement is met.
+
+Although one requirement is not fulfilled, we should not discard our results entirely. Rather, **we should interpret these results with appropriate caution**. 
+
+<br>
+
+---
+
+
+
+
+

@@ -1,0 +1,238 @@
+---
+title: "Sampling Distributions Unveiled"
+output: 
+  html_document:
+    theme: sandstone
+    toc: true
+    toc_float: true
+    toc_depth: 5
+    code_folding: hide
+
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(haven)
+
+```
+
+## Sampling Distributions of the Slope and intercept of a Regression Line 
+
+A sampling distribution is the distribution of a sample statistic calculated from repeated random samples from a population. It's key to making inferences about a population based on limited sample information.
+
+
+### Population Model Example: Macaroon Shell Quality and Baking Time
+
+Macaroons are a French pastry consisting of two meringue-based shells sandwiched together with a filling. When making macaroons, there are many tedious tasks that take place to get the perfect shells, one of those tasks being whipping the meringue. Thus, in this scenario we will consider the linear relationship between macaroons diameter ($Y_i$) and the whipping time of the meringue ($X_i$). This law can be depicted with the following equation:
+
+$$\underbrace{Y_i}_\text{Macaroon Diameter} = \overbrace{\beta_0}^\text{Intercept} + \overbrace{\beta_1}^\text{Slope} \underbrace{X_i}_\text{Meringue Whipping Time} + \epsilon_i \text{ where } \epsilon_i \sim N(0,{\sigma^2})$$
+
+Where:
+
+- $Y_i$ = Macaroon Diameter (Response Variable)
+- $\beta_0$ = base macaroon diameter in centimeters
+- $\beta_1$ = increase in diameter per minute of whipping
+- $\epsilon_i \sim N(0,\sigma^2)$=  random error with standard deviation
+- $X_i$ = Meringue Whipping Time (Predictor Variable)
+
+
+Let's explore this scenario further through the following categories: 
+
+#### { .tabset .tabset-pills }
+
+
+##### Data Visualization and Initial Analysis
+
+```{r}
+# Whipping time and macaroon diameter vectors
+whipping_time <- c(2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5,
+                   7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5)
+
+diameter_cm <- c(2.0, 2.3, 2.6, 2.9, 3.2, 3.5, 3.7, 4.0, 4.1, 4.3,
+                      4.4, 4.5, 4.6, 4.7, 4.75, 4.8, 4.82, 4.81, 4.78, 4.75)
+
+# Create the data frame
+macaroondata <- data.frame(whipping_time = whipping_time,  diameter_cm = diameter_cm)
+
+macaroon <- lm(diameter_cm ~ whipping_time, data = macaroondata)
+
+# Gettin' the different samplez
+set.seed(272)
+N <- 10000
+
+# Simulatin' whipping times (in minutes) for a full macaron-making population
+x_pop <- rnorm(N, mean = 6.5, sd = 2)  # average whip time: 6.5 min
+
+# Simulating shell diameters with a linear relationship + noise
+y_pop <- 2 + 0.3 * x_pop + rnorm(N, mean = 0, sd = 0.3)
+
+
+plot(y_pop ~ x_pop, 
+     pch=16, cex=0.5, col=rgb(0.2,0.2,0.2,0.2),
+  xlab ="Meringue Whipping Time", 
+  ylab="Shell Diameter (cm)", 
+  main="Effect of Whipping Time on Macaroon Shell Size")
+abline(a = 2, b = 0.30, col="lightpink", lwd=2) # our sheriff (the law)
+
+legend("bottomright", 
+       legend= c("Law", "Sample 1", "Sample 2", "Sample 3"), 
+       col=c("lightpink", "powderblue", "lightgoldenrod1", "plum3"),
+       lwd=c(3,3,3,3))
+
+N <- 15
+x <- sample(x_pop, N)
+slope <- rnorm(1, mean = 0.3, sd = 0.1)
+y <- 2 + slope*x + rnorm(N, 0, 0.3)
+points(y ~ x, pch=16, cex=1, col="powderblue")
+first <- lm(y ~ x)
+abline(first, col="powderblue", lwd=2)
+
+
+x <- sample(x_pop, N)
+slope <- rnorm(1, mean = 0.3, sd = 0.1)
+y <- 2 + slope*x + rnorm(N, 0, 0.3)
+points(y ~ x, pch=16, cex=1, col="lightgoldenrod1")
+second <- lm(y ~ x)
+abline(second, col="lightgoldenrod1", lwd=2)
+
+
+x <- sample(x_pop, N)
+slope <- rnorm(1, mean = 0.3, sd = 0.1)
+y <- 2 + slope*x + rnorm(N, 0, 0.3)
+points(y ~ x, pch=16, cex=1, col="plum3")
+third <- lm(y ~ x)
+abline(third, col="plum3", lwd=2)
+
+```
+
+###### { .tabset .tabset-fade }
+
+####### Sample 1 Regression Summary
+
+
+```{r}
+summary(first) %>%
+  pander()
+```
+
+
+####### Sample 2 Regression Summary
+
+```{r}
+summary(second) %>%
+  pander()
+
+```
+
+
+####### Sample 3 Regression Summary
+
+```{r}
+ summary(third) %>%
+  pander()
+```
+
+
+
+##### Sampling Distribution Analysis
+
+Generate sampling distributions for slope and intercept estimates
+ Analyze mean and standard deviation (standard error) of these distributions
+
+##### Statistical Interpretation
+
+Explain the relationship between standard errors and sampling distributions
+ Connect the three summary outputs to the broader sampling distribution concept
+
+##### Parameter Impact Analysis
+
+- Examine how standard error changes with:
+    - Sample size
+    - Sigma value
+    - X-value range
+    
+    
+
+
+#### Sampling Distribution Properties
+
+The sampling distributions of b₀ (intercept) and b₁ (slope) have these characteristics:
+
+##### Mean of Sampling Distributions
+
+- $E(b_0)$ = $\beta_0$ = 35 (unbiased estimator of base diameter)
+- $E(b_1)$ = $\beta_1$ == 0.8 (unbiased estimator of size change rate)
+
+##### Standard Error Effects
+
+The standard error (SE) of both b₀ and b₁ is affected by:
+
+##### 1. Sample Size (n)
+
+- SE decreases as more batches of macarons are measured
+- SE ∝ 1/√n
+
+##### 2. Error Standard Deviation (σ)
+
+- SE increases with more variation in macaron sizes
+- SE ∝ σ
+
+##### 3. Range of X-values
+
+- SE decreases with wider range of baking times tested
+- Testing more diverse baking times gives more precise estimates
+
+The standard error in regression output measures the typical deviation of the sample estimates (b₀ and b₁) from their true population values (β₀ and β₁). This helps determine the precision of our estimates and construct confidence intervals for predicting macaroon sizes.
+
+
+
+
+## P - Values
+
+### { .tabset .tabset-pills }
+
+#### Definition
+
+help us determine if our results are statistically significant by measuring how likely we would get these results by chance
+
+#### Standard Errors
+
+We use standard errors to calculate t-values, which tell us how far our estimates are from zero in terms of standard deviations
+
+
+
+
+## Confidence Intervals
+
+### { .tabset .tabset-pills }
+
+#### Definition
+
+The ranges where we believe the truth lies
+
+A 95% confidence interval means if we repeated the study many times, about 95% of these intervals would contain the true value
+
+
+

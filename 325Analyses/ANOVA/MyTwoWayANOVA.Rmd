@@ -1,0 +1,413 @@
+---
+title: "<center>Two-way ANOVA: Final Beginning Algebra Grades</center>"
+output: 
+  html_document:
+    theme: united
+    code_folding: hide
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+
+
+# Record your data from your own mini experiment in Excel.
+# Save the data as a .csv file in the Data folder of the Statistics-Notebook.
+
+# Read in the data
+BAFinalGrades <- read_csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/BeginningAlgebraFinalGrades.csv") 
+```
+
+<!-- Instructions:
+
+Perform your own mini experiment using two factors that each have at least two levels. Analyze your data using a two-way ANOVA.
+
+Studying reaction time is recommended because the data is quickly collected.
+
+While you should use the warpbreaks example analyses as your guide on how to properly complete this analysis, you should also be creative in your final delivery of this analysis. If you copy the format and approach of the example analyses, be sure to give credit in your document to these example analyses. You could write something like, "This work is modeled after the [warpbreaks](https://byuistats.github.io/Statistics-Notebook/Analyses/ANOVA/Examples/warpbreaksTwoWayANOVA.html) analysis." Whatever you do, DO NOT use any of the written statements from the example analyses in your analysis unless you quote them directly and give credit. Using someone else's writing as your own without giving credit to the original author is plagiarism and is an Honor Code Violation. So do your own work. Plus, the more you try to write things in your own words, the more you will learn. Also, note that there aren't really any "rules" about exactly how your document should be organized. So be creative and organize your file in a way that makes sense to you, but still has all important elements.
+
+-->
+
+## Background
+
+---
+
+Beginning Algebra is a course at BYU-Idaho recommended for students "needing basic algebra before taking progressively higher math courses," according to the BYU-Idaho Mathematics Course Page[^1]. This course is available every semester within BYU-Idaho's three-track system: Fall, Winter, and Spring. Students taking the course use Canvas, a web-based learning management system, to upload and complete assignments. Canvas tracks various aspects of student performance, including assignments, grades, attendance, and participation in the course.
+
+For this study, we collected final grades from Beginning Algebra students through Canvas across all three semesters. We also recorded each student's participation level as tracked by Canvas. According to the Canvas Course Analytics for Faculty [^2], Canvas measures participation based on student interaction within the Beginning Algebra course module. It monitors specific actions that influence participation scores, such as the frequency of on-time or late work submissions. Based on these factors, Canvas assigns each student a participation rating of Low, Moderate, or High. With this data, we will conduct a **Two-Way ANOVA test** to determine which semester and participation produces students with the highest final grades.  
+
+<br>
+
+***A table listing the data of each student is listed below.*** Each row represents a single student. Then, each column shows the student's participation, final grade, and the semester they took Beginning Algebra. 
+
+
+```{r}
+datatable(BAFinalGrades, options=list(lengthMenu = c(3,10,30)))
+```
+
+<br>
+
+---
+
+## Hypothesis
+
+<br>
+
+By using a **Two-Way ANOVA test**, we will analyze how the two variables, semester and participation, effect the outcome of final grades. The model of this Two-Way ANOVA test will be shown with the following equation: 
+
+$$
+  \underbrace{Y_{ijk}}_\text{Final Grades} = \mu + \alpha_i + \beta_j + \alpha\beta_{ij} + \epsilon_{ijk}
+$$
+
+To further clarify the use of this equation, here is what each variable indicates: 
+
+<br>
+
+- μ : the grand mean (which is the average Y-value ignoring all information contained in the factors)
+
+- $\alpha_i$ : the first factor, **Semesters**, with levels **Fall, Winter, and Spring**
+ 
+- $\beta_i$ : the second factor, **Participation**, with levels **Low, Moderate, and High**
+
+- $\alpha\beta_{ij}$ : the **interaction of the two factors** which has 3×3=**9 levels**
+ 
+-  $\epsilon_{ijk}\sim N(0,\sigma^2)$ = the normally distributed error term
+
+<br>
+
+---
+
+With our model shown and explained, we can now ask the following questions through these 3 hypotheses: 
+
+<br> 
+
+(1) Does the amount a student **participates** in the course affect the average final Beginning Algebra grades?
+
+    - Factor: **Participation** with levels *Low (L), Moderate (M), and High (H)*
+
+$$ H_0:α_L =α_M=α_H = 0 $$
+
+$$ Ha:α_i ≠\text{ 0 for at least one i ∈ {1 = L, 2 = M, 3 = H} } $$
+
+<br>
+
+
+(2) Does the **semester** in which a student takes Beginning Algebra affect their average final grade?
+
+    - Factor: **Semester** wth levels *Fall (F), Winter (W), and Spring (S)*
+
+
+$$ H_0:β_F = β_W = β_S =0 $$
+
+$$ H_a : β_j ≠ \text{0 for at least one i ∈ { 1 = F, 2 = W, 3 = S}} 
+$$
+
+<br>
+
+
+(3) Does a student's **participation** level vary depending on the **semester**? (Alternatively, does the **semester** influence a student's **participation**?)
+
+    - Is there an **interaction** between participation and a specific semester?
+
+$$H0:αβ_{ij} = \text{0 for all i, j}$$
+$$ Ha: αβ_{ij} \neq \text{0 at least one i, j} $$
+
+---
+
+
+We will also use the following significance level throughout this study: 
+
+$$ \alpha = 0.05 $$
+
+---
+
+## Analysis
+
+
+### Two-Way ANOVA
+
+### {.tabset .tabset-pills}
+
+
+The table below shows the **Two-Way ANOVA** test on the Beginning Algebra Final Grades: 
+
+```{r}
+BAanova <- aov(FinalGrade ~ Semester + Participation + Semester:Participation, data=BAFinalGrades)
+
+summary(BAanova) %>% pander()
+```
+
+<br>
+
+---
+
+With the three p-values that are computed by our ANOVA test, we can answer the hypotheses that we stated at the beginning of the study. 
+
+<div style="display: flex; justify-content: space-around;">
+<div>
+
+<center>
+
+$$ \text{Semester p-value} = 0.04161 < \alpha $$
+
+</center>
+
+  </div>
+  <div>
+
+
+<center>
+
+$$ \text{Participation p-value} = 9.544e^{-33} < \alpha $$
+
+</center>
+
+  </div>
+</div>
+
+
+<br>
+
+$$ \text{Interaction p-value} = 0.01533 < \alpha $$
+
+
+---
+
+<br>
+
+Comparing each p-value to the significance level, **both factors**, Semester and Participation, have a **significant effect** on a student's final grade in Beginning Algebra as they both produce small p-values. The **Semester's p-value is barely significant**, being only 0.01 points below the level of significance, while the **Participation's p-value is highly significant**, falling even farther below.
+
+Moreover, **the specific semester appears to significantly influence student participation in the course**, as evidenced by the p-value for the interaction between these two factors being considerably lower than the established significance level. To better illustrate the impact of each factor, **we will now create graphical representations and construct a numerical summary to demonstrate how these factors affect final grades as well as check the fulfillment of the ANOVA requirements**.
+
+<br>
+
+
+---
+
+#### Graphical & Numerical Summaries {.tabset .tabset-fade}
+
+To visually support the findings of our Two-way ANOVA, we will present the results of each hypothesis through the following graphics. Additionally, a table showing the specific average final grade values are shown directly after each graphic. 
+
+* ***Continue through each tab to see the individual factors and their interaction***
+
+<br> 
+
+
+##### BYU-Idaho Semesters
+
+<br>
+
+The first factor, **Semester**, is shown to be **slightly significant** according to the Two-Way ANOVA test with a p-value of *0.04161*. The following graph displays the higher average of final grades appear to be seen in the Spring semester, followed by the Winter and then Fall with both displaying nearly the same lower averages. Therefore, **if a student has to decide which semester they should schedule their Beginning Algebra course, the desired semester would be the Spring semester**.
+
+<br>
+
+---
+
+<center>
+
+```{r}
+BAFinalGrades$Semester <- factor(BAFinalGrades$Semester, levels = c("Fall","Winter","Spring"))
+
+ggplot(BAFinalGrades, aes(x=Semester, y=FinalGrade, group=1)) +
+  geom_point(color="firebrick1") +
+  stat_summary(fun="mean", geom="line") +
+  labs(title="Spring Semester Seems to Have Higher Final Grades", x="Semester", y="Beginning Algebra Final Grades") +
+  theme_minimal()
+```
+
+```{r}
+BAFinalGrades %>%
+  group_by(Semester) %>%
+  summarise(`Mean Final Grades`=mean(FinalGrade), .groups="drop") %>%
+  pander(caption="Mean Final Grades By Semester")
+```
+
+</center>
+
+---
+
+
+##### Canvas Participation
+
+<br>
+
+The second factor, **Participation**, proves to be **extremely significant** according to the Two-Way ANOVA test's p-value of *9.544e-33*. Our graph clearly shows that the highest final grade averages correlate with high participation. Consequently, **students aiming for better grades in Beginning Algebra—or any class—should consistently complete and submit their assignments on time**.
+
+<br>
+
+---
+
+<center>
+
+```{r}
+BAFinalGrades$Participation <- factor(BAFinalGrades$Participation, levels = c("Low","Moderate","High"))
+
+ggplot(BAFinalGrades, aes(x=Participation, y=FinalGrade, group=1)) +
+  geom_point(color="darkred") +
+  stat_summary(fun="mean", geom="line") +
+  labs(title="Higher Participation Seems to Lead to Higher Grades", x="Participation", y="Beginning Algebra Final Grades") +
+  theme_minimal()
+```
+
+```{r}
+BAFinalGrades %>%
+  group_by(Participation) %>%
+  summarise(`Mean Final Grades`=mean(FinalGrade), .groups="drop") %>%
+  pander(caption="Mean Final Grades by Participation")
+```
+
+</center>
+
+---
+
+##### BYU-Idaho Semesters Based on Canvas Participation
+
+<br>
+
+According to the previous graphics and Two-Way ANOVA test, both factors, **Semester and Participation**, are significant with their p-values displaying below 0.05. While one factor was more significant than the other, the interaction between the two factors is **highly significant** with a p-value of *0.01533*.
+
+The following graphic illustrates that **high participation in the fall semester** yields the highest average final grade in Beginning Algebra, **at 95.31**. Interestingly, the Spring semester produces the highest final grade averages for Low and Moderate participation levels, with the Low participation average for Spring being 72.54. Grades resulting in the 70s range is considered to be a passing grade resulting in C+, C, or C-. In contrast, the other two semesters' low participation final grade averages range in the 50s, which is considered to be a failing grade resulting in the letter grade F. This suggests that **the Spring semester results in more students passing Beginning Algebra compared to those in Fall and Winter**.
+
+
+<br>
+
+---
+
+<center>
+
+```{r}
+ggplot(BAFinalGrades, aes(x=Semester, y=FinalGrade, group=Participation, color=Participation)) +
+  geom_point() +
+  stat_summary(fun="mean", geom="line") +
+  labs(title="Beginning Algebra Seems Better during the Spring Semester", x="BYU-Idaho Semesters", y="Beginning Algebra Final Grades") +
+  theme_minimal()
+```
+
+```{r}
+BAFinalGrades %>%
+  group_by(Participation, Semester) %>%
+  summarise(ave=mean(FinalGrade), .groups="drop") %>%
+  spread(Participation, ave) %>%
+  pander(caption="Mean Final Grades by Semester and Participation")
+```
+
+</center>
+
+---
+
+#### Diagnostic Plots
+
+<br>
+
+Before we trust the results of our **Two-Way ANOVA test**, we will first check to see if the requirements for our ANOVA test are fulfilled.
+
+---
+
+There *two* requirements that we must check when using an ANOVA test: 
+
+(1) Constant (equal) Variance
+
+(2) Normal Error Terms (Residuals)
+
+
+<br>
+
+To check each requirement, **we will make a graph for each requirement as follows**: 
+
+<center>
+
+```{r}
+
+par(mfrow=c(1,2))
+plot(BAanova, which=1:2, pch=16)
+```
+
+</center>
+
+<div style="display: flex; space-between: space-around;">
+  <div style="padding, 10px;flex: 1;">
+
+
+<center>
+
+The **residual plot** shows that the *constant (equal) variance* assumption raises some concern as the points within each group have varying spread. The spread of each group seems to gets closer and closer as we go from left to right as well as some straying point from the more clustered groups. Thus, showing **the variance of the residuals are not constant and do not accurately show a relationship between each variable**. 
+
+</center>
+
+   </div>
+   
+<div style="border-left: 2px solid black; height: 100%; margin: 0 10px;"></div>
+
+  
+<div style="padding; 10px;flex: 1;">
+
+<center>
+
+For the **Q-Q plot**, it shows that the *residuals of the data* is not quite normally distributed. There are visible points at the lower and upper ends of the graph deviating away form the diagonal line, which represents a normal distribution. Thus, showing us that **the residuals of the data are not normal distributed**.
+
+</center>
+
+  </div>
+</div>
+
+
+--- 
+
+<br> 
+
+Although both graphs indicate that the data fails to meet both requirements, this primarily means our findings may be less reliable due to the abnormalities in the data. As a result, **we should interpret the results found within the ANOVA test, graphical summaries, and numerical summaries cautiously**.
+
+
+<br>
+
+
+---
+
+
+## Interpretation
+
+<br>
+
+Overall, **both the semester in which a student takes Beginning Algebra and their level of participation in the course affect their final grade**. The main recommendation would be to take Beginning Algebra in the Spring semester, as students are more likely to pass the course regardless of their participation level with a average final grade range of **72.54 (low participation) - 94.77 (high participation)**. While other semesters also yield high final grade averages, students risk failing if they don't maintain moderate or high participation throughout as the grades of students with a low participation average between a final grade of **55.92-58.25**.
+
+It's important to note that *our data failed to meet both ANOVA requirements*, so these findings and interpretations should be **viewed with caution**. To statistically confirm these results, further studies will be necessary.
+
+
+
+---
+
+<u>Sources:</u>
+
+
+- Data Collection
+    - Huge thank you to ***Carol Ashcraft***, my lovely boss, for taking the time to go through her Canvas page for me to collect all those final grades and participation scores from her many semesters of teaching Beginning Algebra classes!
+    
+<br>
+
+- Formatting Inspiration
+    - [Breaks in Warps while Weaving: Two-way ANOVA](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/Analyses/ANOVA/Examples/warpbreaksTwoWayANOVA.html)
+
+
+[^1]: [BYU-Idaho Mathematics Course Catalog](https://www.byui.edu/catalog/#/courses/N1b2lgbniZ?bc=true&bcCurrent=MATH100B%20-%20Beginning%20Algebra&bcGroup=Mathematics&bcItemType=courses)
+    
+
+
+[^2]: [Canvas Course Analytics for Faculty](https://learnx.alueducation.com/courses/2/pages/canvas-course-analytics-for-faculty#:~:text=The%20following%20student%20actions%20will,to%20view%2Fedit%20a%20document)
+    

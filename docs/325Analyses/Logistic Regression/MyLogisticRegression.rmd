@@ -1,0 +1,274 @@
+---
+title: "Logistic Regression - Cat Adoptions"
+output: 
+  html_document:
+    theme: readable
+    code_folding: hide
+---
+
+<!-- Find some data of interest to you that can be analyzed with a logistic regression. Complete your Logistic Regression Analysis using this file. 
+
+Hint, run the command 
+
+> data() 
+
+in your Console to see available datasets in R that you could use for this Analysis. You are also welcome to collect data yourself, or find other available datasets online for this Analysis. Just be careful to not use anyone else's "analysis" for this Analysis. Also, no conducting surveys unless you have IRB approval to do so. -->
+
+```{r, include=FALSE}
+library(GSODR)
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(sf)
+library(ggspatial)
+library(leaflet.extras)
+
+catadoptions <- read_csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/catadoptions.csv")
+```
+
+---
+
+<br>
+
+<center>
+
+![](C:/Users/paige/OneDrive/Pictures/Screenshots/Screenshot 2024-11-25 093755.png)
+
+</center>
+
+<br>
+
+## Background
+
+A few months ago, I adopted two male kittens from the Idaho Falls Animal Shelter. From seeing the listing to actually getting to take them home felt like a life time of waiting.
+
+According to the Animal Human Society[^1], most cats are in new homes within 14 days from intake to adoption on average. Additionally, the East Dallas Veterinary Clinic[^2] states that male cats tend to be more sociable and playful in comparison to their female counter parts. Based off these assumptions, we will be using a **simple logistic regression** to answer the following question: 
+
+***What is the probability that the cat is a male given how many days it took for them to get adopted?***
+
+<br><br>
+
+*Click the `Show Data` tab below to learn more about the data and its collection.*
+
+## { .tabset .tabset-pills}
+
+### Hide Data
+
+<br>
+
+---
+
+### Show Data
+
+This data was gathered off the Idaho Falls Animal Shelter's Facebook page. On their page, they post various cats along with information such as their age (Months), gender (**1 = Male, 0 = Female**), the day they are available for adoption, as well as the day those said cats get adopted. Therefore, I recorded these characteristics in the table below. I mutated the classification of gender into binary values in order to conduct the *logistic regression test*, as well as adding in a column that subtracted the day they were posted from the day they were adopted to get the waiting period from listing to homing. 
+
+```{r}
+adoptions <- catadoptions %>%
+  mutate(Gender = ifelse(Sex == "M", 1, 0)) %>%
+  select(Age, Gender, Posted, Adopted, DaysListed)
+
+
+datatable(adoptions, options=list(lengthMenu=c(3,10,30)))
+```
+
+<br>
+
+---
+
+
+## Logistic Model
+
+The probabiltity of the gender of the cat being a male based on how many days it took for them to get adopted is shown by the **logistic regression model** below: 
+
+$$P(Y_i = 1 | x_i ) = \frac{e^{\beta_0+\beta_1\text{Days Listed}}}{1+e^{\beta_0+\beta_1\text{Days Listed}}} = \pi_i$$
+
+| Part | What it means |
+| --- | --- |
+| $Y_i$ (**Responsive variable**) | Describes the probability the $Y_i = \text{Male (1) or Female (0)}$ for a given scenario. |
+| $x_i$ (**Explanatory variable**)| Describes the observed value of the number of days an individual cat was listed. |
+
+<br>
+
+Our $\beta_1$ value **focuses on the proportional change in the odds that $Y_i = 1$ (or that the cat adopted is male) for every day that goes by**. Thus, our hypotheses are stated as so to capture if the slope is or is not significant to effecting the probability that the gender of the cat is male: 
+
+
+$$H_0 : \beta_1 = 0$$
+
+$$H_a : \beta_1 \neq 0$$
+
+<br>
+
+Additionally, our **level of significance** will be: 
+
+<center>
+
+$$\alpha = 0.05$$
+
+</center>
+
+<br>
+
+---
+
+## Analysis
+
+<br>
+
+To visualize the wait a cat has depending on their gender, we will use a **scatter plot**. The values listed as **1 are the male cats** and the **0 are the female cats**. The gradient of the dots shows just how long a specific cat had to wait from getting listed to being adopted. The **lighter the dot the shorter the wait** (0-5 days), and the **darker the dot the longer the wait**(>20 days). Looking at the slope of the line, it seems that**as the days go on the probability of the cat being male decreases**.
+
+However, **the curve of the plot does not approach 0 or 1 within the range of the data**. Therefore, the logistic regression is **not very useful for this data**. 
+
+
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+catgraph <- ggplot(data=adoptions, aes(x=DaysListed, y=Gender, color = DaysListed)) +
+  geom_point(size =4, alpha = 0.8, aes(
+    text = paste(
+      "Age (Months):", Age, "<br>",
+      "Listed:", DaysListed, "days<br>"))) +
+  geom_smooth(method = "glm",
+              method.args = list(family="binomial"), se=FALSE, color = "steelblue1")+
+  scale_color_gradient(low = "steelblue1", high = "royalblue4") +
+  labs(title = "Idaho Falls Animals Shelter Cat Adoptions", 
+       x = "Days Listed",
+       y = "Gender (Male = 1, Female = 0") +
+  theme_minimal() + 
+    theme( 
+    panel.background = element_rect(fill = "white", color = NA), 
+    plot.background = element_rect(fill = "white", color = NA)
+  )
+  
+ggplotly(catgraph, tooltip="text")
+```
+
+</center>
+
+Before we dive into our **logistic regression test**, we will need to confirm the assumption of if the model appears to fit the data well or not. **To see if there is evidence that the above logistic regression is NOT a good for the data**, we will use the ***Deviance Goodness of Fit Test***.
+
+<br><br>
+
+*Click the `Show Deviance Goodness of Fit Test` tab to see the test results*
+
+## { .tabset .tabset-pills}
+
+### Hide Deviance Goodness of Fit Test
+
+<br>
+
+---
+
+### Show Deviance Goodness of Fit Test
+
+The hypotheses of the Deviance Goodness of Fit Test are shown below:
+
+$$H_0 : \pi_i = \frac{e^{\beta_0 + \beta_1x_i}}{1 + e^{\beta_0 + \beta_1x_i}}$$
+
+$$H_a : \pi_i \neq \frac{e^{\beta_0 + \beta_1x_i}}{1 + e^{\beta_0 + \beta_1x_i}}$$
+
+The null hypothesis states that the data **is** a good fit (useful for the data), while the alternative hypothesis states that the data is **not** a good fit(not useful for the data). 
+
+<br>
+
+The p-value of this test is calculated below:
+
+```{r include=FALSE}
+pchisq(195.9, 148, lower.tail= FALSE)
+
+``` 
+
+
+
+$$\text{P-value} = 0.0051 > \alpha$$
+With this low p-value, we can conclude that that we have **sufficient evidence to reject** the assumption that **the logistic model is NOT a good fit for this data**. This was a trend that was shown on the graph due to **the curve of the plot does not approach 0 or 1 within the range of the data**.
+  
+<br>
+
+---
+
+## Logistic Regression Test
+
+<br>
+
+Now that we have checked the fitness of the data, we will now conduct our **logistic regression test**. The results are shown below:
+
+```{r}
+glm.adoption <- glm((Gender>0) ~ DaysListed, data= adoptions, family=binomial)
+
+pander(summary(glm.adoption))
+```
+
+<br>
+
+Since our hypotheses are specifically looking at the slope ( $\beta_1$), **we will only pay attention to the p-value of the `DaysListed`**. Therefore, our results are: 
+
+$$\text{P-value} = 0.003046 < \alpha$$
+<br>
+
+With a low p-value, we are given **sufficent evidence** to conclude that Using our logistic regression results, our mathematical model looks like the following: 
+
+$$P(Y_i = 1 | x_i ) \approx \frac{e^{0.5418+(-0.1044)x_i}}{1+e^{0.5418+(-0.1044)x_i}} = \hat{\pi}_i$$
+
+With this updated model, it can help us calculate certain X- values where the probability that the cat adopted is male.
+
+<br>
+
+---
+
+
+## Interpretation
+
+<br>
+
+In order to interpret the effect of the amount of days a cat is listed on the odds, **we must calculate the odds of a success or the odds of the cat listed on the adoption board is male** (when $Y_i$ = 1). We will use $\beta_1$, as it is the focus of our hypothesis, to help us see how much of a percentage of change that takes place for every day that goes past. The calculation is made below.
+
+| Calculations | Interpretation |
+| --- | --- | 
+| $e^{\beta_1} = e^{-0.1044} \approx 0.9008649$ | For every day that a cat is listed, the odds of that cat being male **decreases by approximately 10%** (since 1- 0.901 = 0.099) |
+
+
+<br>
+
+With this discovery, it contradicts our initial idea in the background section suggesting that male cats might be more adoptable.
+
+As said in the background information, *a cat will have an average wait of 14 days from when they are taken into the shelter to being put into their new home*. To determine what the probability of that cat being a male, we will use the following model: 
+
+$$P(Y_i = 1 | x_i ) \approx \frac{e^{0.5418+(-0.1044)*14}}{1+e^{0.5418+(-0.1044)*14}} = \hat{\pi}_i$$
+$$\hat{\pi}_i \approx 0.2849986$$
+
+With this calculation, this shows that there is a **28.5% chance that a cat that is listed for 14 days is male** at the Idaho Falls Animal Shelter. 
+
+<br>
+
+This calculation could be interpreted as more male cats get adopted sooner than female cats, the older cats are mainly female, and or there are more female cats occupying the Idaho Falls Animal Shelter. A suggestion to get more female cats adopted would be to advertise them more on their Facebook where they list the cats or create more opportunities for adoption such as adoption events to promote more female cats to find their fur-ever home. 
+
+<br>
+
+---
+
+## Sources
+
+[^1]:[Animal Human Society: Adoption FAQ](https://www.animalhumanesociety.org/resource/adoption-faq#:~:text=There%20is%20no%20time%20limit,days%20from%20intake%20to%20adoption.)
+
+[^2]: [East Dallas Veterinary Clinic: Services](https://www.eastdallasvetclinic.com/services/cats/blog/how-spot-personality-differences-between-male-and-female-cats#:~:text=Male%20cats%20tend%20to%20be,may%20be%20your%20best%20bet.)

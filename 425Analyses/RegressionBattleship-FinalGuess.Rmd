@@ -1,0 +1,198 @@
+---
+title: "Regression Battleship - Final Guess"
+author: "Paige Stewart"
+output: 
+  html_document:
+    theme: united
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r}
+# Load any libraries you need here:
+library(mosaic)
+library(tidyverse)
+
+# Read in the rbdata here:
+rbdata <- read.csv("rbdata_freedom.csv", header=TRUE)
+```
+
+## The Model of your Guess
+
+<!-- Enter your guessed model in the math notation below. -->
+
+$$
+  Y_i = \beta_0 + ...YourGuess... + \epsilon_i
+$$
+
+## The lm(...) of your Guess
+
+```{r}
+## Input your lm(Y ~ ... ,data=rbdata)
+#final.lm <- lm(Y ~ 1, data=rbdata) #replace the "1" with your model
+```
+
+```{r, comment=NA}
+################################################################
+#Don't edit this part:
+  #summary(final.lm)
+#and please don't pander it for this particular assignment.
+```
+
+
+## The Plot of your Guess
+
+```{r}
+# Plot your guess at the model here:
+# Remember, your guess only counts for credit if you correctly plot it in a single 2D scatterplot.
+
+# Please show these three things in your plot:
+# ## the data properly colored
+# ## the "fitted values" from your final.lm$fit with colors matching the data colors
+# ## your manually drawn curves of your regression model going through all fitted value points
+
+
+
+```
+
+
+## Searching for the Model
+
+<!-- Put all your scratch work down here. -->
+
+# step 1: check pairs plot
+
+- what in the US-of A??????
+
+```{r}
+pairs(rbdata)
+```
+
+# Step 2: run lm
+
+```{r}
+freedom <- lm(y ~ ., data= rbdata)
+
+summary(freedom)
+```
+
+# Step 3: Make graph
+
+- we can see a pattern of stars and stripes, let's look at them separately and see what we can dig further!
+
+```{r}
+ggplot(rbdata, aes(x=x2, y=y, color = interaction(x4))) +
+  geom_point() +
+  facet_wrap(~interaction(x4))
+```
+
+# Step 4: Separating the data
+
+## 4a) When x4 = 0 (the stars)
+
+```{r}
+stars <- rbdata %>%
+  filter(x4 == 0)
+
+pairs(stars, panel=panel.smooth, col = as.factor(stars$x5))
+```
+
+```{r}
+stary <- lm(y~x2*x5*x4, data = stars)
+
+summary(stary)
+
+```
+
+<br>
+
+- models looking pretty linear!
+
+```{r}
+ggplot(stars, aes(x=x2, y=y, color = interaction(x5))) +
+  geom_point() +
+  facet_wrap(~interaction(x5))
+```
+
+
+## 4b) When x4 = 1 (the stripes)
+
+- side note: also noticed that when x4 = 0, x10 = 1 and vice versa...
+
+```{r}
+stripes <- rbdata %>%
+  filter(x4 == 1)
+
+pairs(stripes, panel=panel.smooth)
+```
+
+```{r}
+stripey <- lm(y~x2*x6*x4, data = stripes)
+
+summary(stripey)
+```
+<br>
+
+- Models lookin' cubic!
+
+```{r}
+ggplot(stripey, aes(x=x2, y=y, color = interaction(x6))) +
+  geom_point() +
+  facet_wrap(~interaction(x6))
+```
+
+## 4c) When x10 = 1
+
+```{r}
+huh <- rbdata %>%
+  filter(x10 == 1)
+
+pairs(huh, panel=panel.smooth)
+
+huhh <- lm(y~x2*x10*x5, data = huh)
+
+summary(huhh)
+```
+
+
+- linear lookin'!
+
+```{r}
+ggplot(huh, aes(x=x2, y=y, color = interaction(x10))) +
+  geom_point() +
+  facet_wrap(~interaction(x10))
+```
+
+## 4d) When x10 = 0
+
+```{r}
+bruh <- rbdata %>%
+  filter(x10 == 0)
+
+pairs(bruh, panel=panel.smooth)
+
+bruhh <- lm(y~x2*x10*x5, data = bruh)
+
+summary(bruhh)
+```
+
+- a bit harder to tell, but can sense it being a bit cubic
+
+```{r}
+ggplot(bruh, aes(x=x2, y=y, color = interaction(x10))) +
+  geom_point() +
+  facet_wrap(~interaction(x10))
+```
+
+# Step 5: Combining lm
+
+```{r}
+amurica <- lm(y ~ x2 + x2:x4 + x5 + x5:x4 + x6:x4 + x2:x6:x4 +I(x2^2):x4:x6 + I(x2^3):x4:x6 +x2:x5:x4 +I(x2^2):x4:x5 + I(x2^3):x4:x5 + x5:x10 + x2:x5:x10 +I(x2^2):x10:x5 + I(x2^3):x5:x10, data = rbdata)
+
+summary(amurica)
+```
+
+
+
+ 

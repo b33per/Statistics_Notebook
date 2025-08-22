@@ -1,0 +1,268 @@
+---
+title: "<center> Simple Linear Regression : BYU-Idaho Math Tutoring  </center>"
+output: 
+  html_document:
+    theme: flatly
+    code_folding: hide
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+
+ExamsTutor <- read_csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/ExamsTutor.csv")
+```
+
+
+<!-- Directions
+
+Come up with a simple linear regression of your own creation. 
+
+* Write the Background and clearly state your question. Then collect data and perform the linear regression analysis in order to answer your question. Use the proper order of first, ask the question, then second, figure out the answer.
+
+* You should collect both the quantitative response variable and the quantitative explanatory variable yourself. This can be data you collect from 
+    - the internet (like weather data, Facebook data, or sports data) 
+    - your own experiment 
+    - your own observational study
+* However,     
+    - The data should not be a single pre-existing dataset. It must be something that you piece together yourself.
+
+* You need at least $n=3$ $(X,Y)$ pairs to perform the regression. However, your regression will only be useful if you can get around $n=10$ or more observations.
+
+-->
+
+----
+
+## Background
+
+## {.tabset .tabset-pills}
+
+<br>
+
+Brigham Young University-Idaho offers free tutoring for all students in various subjects through personal tutors, group tutoring, or drop-in labs. The introductory math classes (Math 100A, 100B, and 101) at BYU-Idaho collaborate with the university's Math Study Center by assigning "Tutor Visits." These assignments require students to visit the free Math Study Center for help with *challenge questions*. Completing these tutor visits contributes to the **Tutoring** category, which accounts for **10%** of the final grade. The purpose of these assignments is twofold: to encourage students to utilize available resources and to enhance their learning. Ultimately, tutoring aims to improve performance in other areas, such as assignments and tests. In this study, we will address the following question:
+
+***Does the amount of tutoring a student receives correlate with their chapter exam scores?***
+
+
+<br>
+
+*To see the data, click the tab below*
+
+### Hide Data
+
+---
+
+### Show Data
+
+In this study, we will be using students from Math 100B (Beginning Algebra). The rows represents a student, and the columns show the students' Tutoring Final Score and their Chapter Exam Final Score. 
+
+Tutoring Final Scores are calculated by how many Tutor Visit assignments the student completed and then averaged to produce a final score, and Chapter Exam Final Scores are given by averaging their Chapter Exam Scores throughout the semester into an overall Exam Final Score.
+
+```{r}
+datatable(ExamsTutor, options(list=c(3,10,30)))
+```
+
+
+---
+
+## Hypothesis
+
+<br>
+
+In this study, the following model show the relationship between a student's Final Chapter Exam Score through a ***linear regression***.  
+
+$$\underbrace{Y_i}_\text{Exam Final Scores} = \overbrace{\beta_0}^\text{Y- intercept} + \overbrace{\beta_1}^\text{Slope} \underbrace{X_i}_\text{Final Tutoring Scores} +  \epsilon_i \space where \space \epsilon_i \sim N(0,\sigma^2)$$
+
+In ***linear regression***, the key points of interest are the **y-intercept** and the **slope**. The y-intercept isn't particularly helpful in this case, as it only tells us the average final exam score for students who don't receive tutoring. Instead, we'll focus on the **slope**, which reveals *how exam scores change relative to the percentage of tutoring a student receives*. Our hypotheses will be based on this relationship:
+
+$$H_0 : \beta_1 = 0$$
+$$H_a :\beta_1 \neq 0$$
+
+<br>
+
+Additionally, our level of significance will be: 
+
+$$\alpha = 0.05$$
+<br>
+
+---
+
+## Analysis
+
+## {.tabset .tabset-fade}
+
+<br>
+
+A scatter plot of Tutoring Final Scores vs. Exam Final Scores below shows a moderately positive relationship. The correlation coefficient of **0.6323** indicates a moderate linear association between these variables.
+
+*Hover over each dot to see specific scores*
+
+<center>
+```{r message=FALSE, warning=FALSE}
+TTExams <- ggplot(ExamsTutor, aes(x=`Tutoring Final Score`, y= `Exams Final Score`)) +
+  geom_point(size=1.5, color = "darkolivegreen", alpha =0.5) +
+  geom_smooth(method="lm", formula= y~x, se=FALSE, size= 0.5, color="darkgreen")+
+  labs(title="BYU-Idaho's 100B Students Tutoring Effects on Chapter Tests") +
+  theme_minimal()
+
+ggplotly(TTExams)
+```
+
+</center>
+
+###### Correlation (r)
+```{r}
+cor(ExamsTutor$`Tutoring Final Score`,ExamsTutor$`Exams Final Score`) %>%
+  pander()
+```
+
+
+
+<br>
+
+---
+
+To further confirm our findings, we will now conduct a **Simple Linear Regression** on the data set.
+
+<br>
+
+### Simple Linear Regression Model
+
+<br>
+
+To further confirm our findings, we will now conduct a **Simple Linear Regression** on the data set. The results are shown below:
+
+```{r}
+lmTTExams <- lm(`Exams Final Score` ~ `Tutoring Final Score`, data= ExamsTutor)
+
+pander(summary(lmTTExams))
+```
+
+<br><br>
+
+
+Using the results of the **Linear Regression**, answers our question of ***how the amount of tutoring a student receives correlates with their chapter exam scores*** with the following equation:
+
+
+$$\underbrace{\hat{Y_i}}_\text{Mean Exam Final Score} = 57.21 + 0.3474 \underbrace{X_i}_\text{Tutoring Final Score}$$
+
+Due to the size of our p-value being **$3.339e^{-9}$**, we have significant evidence of a **meaningful** relationship between tutoring and exam scores. Based on our model, a student's average chapter test final score would increase by **0.3474%** for every **1 unit** increase of tutoring that the student gets done. 
+
+<center>
+$$P- value = 3.339e^{-9} < \alpha$$
+</center>
+
+<br>
+
+While the model offers us great insight into our data, we must first check if we can trust the findings of this data by validating its ***appropriateness***.
+
+<br>
+
+*Go to the next tab to see how we check for appropriateness*
+
+---
+
+### Checking Simple Linear Regression Assumptions
+
+<br>
+
+There are 5 assumptions in our ***Linear Regression*** model: 
+
+1. Constant Variance
+
+2. Independent Errors
+
+3. Normal Errors
+
+4. Fixed X Values
+
+5. Linear Relation
+
+<br>
+
+The following **three diagnostic plots** will help to identify if our assumptions are violated or not. 
+
+The 4th assumption, **Fixed X Values**, can't be tested with a diagnostic plot. However, since the data was collected directly from the grade book, we can reasonably assume accurate and precise measurement of the X variable.
+
+<center>
+```{r fig.height=6,fig.width=12, message=FALSE}
+par(mfrow=c(1,3))
+
+plot(lmTTExams, which=1)
+
+qqPlot(lmTTExams$residuals, main="Q-Q Plot", col="darkolivegreen", col.lines="darkgreen",pch= 19, id=FALSE)
+
+plot(lmTTExams$residuals, ylab= "Residuals", main="Residuals vs Order")
+```
+
+</center>
+
+
+
+<div style="display: flex; justify-content: space-around;gap:35px; text-align: left;">
+  <div>
+The **Residuals versus Fitted Values plot** assesses ***Linear Relation and Constant Variance***.
+
+Despite a slight linear pattern at the end, the data shows constant variance and linearity due to randomly scattered residuals. Thus, **our 1st and 5th assumptions are NOT violated**. 
+  </div> 
+  <div>
+The **Q-Q Residuals plot** assesses **Normal Errors**. Outliers at the top and bottom indicate non-normality of residuals, **violating our 3rd assumption**. 
+  </div> 
+  <div>
+The **Residuals versus Order plot** checks for **Independent Errors**. With no clear pattern, we can assume residual independence, thus **not violating our 2nd assumption**.
+  </div>
+  </div>
+  
+
+  
+<br><br>
+
+
+While one assumption is violated due to outliers in the **Q-Q Residuals plot**, the impact on our results is not drastic. However, **interpretations should still be made cautiously**, considering the slight skewness in the data.
+
+<br>
+
+---
+
+## Interpretation
+
+<br>
+
+Our **Simple Linear Regression** analysis and accompanying graphics revealed that ***there is a correlation between the amount of tutoring a student receives and their chapter exam scores***.
+
+The scatter plot demonstrated a moderate positive relationship between tutoring and chapter exam scores. Our model indicated that for every **1 unit increase** in tutoring participation, a student's average chapter exam final score would increase **0.3474** as well. In other words, **more tutoring correlated with higher average chapter exam scores**. Focusing on the slope, we obtained a p-value of **$3.339e^{-9}$**, indicating a **statistically significant relationship between the two variables**. These findings suggest that students aiming to enhance their knowledge and test performance should strongly consider engaging in tutoring.
+
+However, it's crucial to note that **since the data set violated one of the Simple Linear Regression assumptions, these interpretations and recommendations should be viewed with caution**. While these findings may not be conclusive, seeking tutoring for any subject remains a valuable pursuit.
+
+---
+
+#### Sources
+
+<br>
+
+- Thanks to my boss, Carol Ashcraft, for giving me permission to use her classes data!
+
+- Formatting Inspiration
+
+  - [Body Weight - Simple Linear Regression Example](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/Analyses/Linear%20Regression/Examples/BodyWeightSLR.html)
+  
+  - [Stopping Distances of Cars - Simple Linear Regression Example](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/Analyses/Linear%20Regression/Examples/carsSLR.html)
+
+

@@ -1,0 +1,351 @@
+---
+title: "The Benefits of Word Recall Strategies"
+output: 
+  html_document:
+      theme: sandstone
+      code_folding: hide
+    
+    
+---
+
+
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+
+
+```
+
+## Background 
+
+---
+
+Many teachers and other educators are interested in understanding how to best deliver new content to students. In general, they have two choices of how to do this.
+
+<br>
+
+1. **The Meshed Approach**
+    - Deliver new content while simultaneously reviewing previously understood content.
+    
+<br>
+
+2. **The Before Approach**
+    - Deliver new content after fully reviewing previously understood content.
+    
+<br>
+
+A study was performed to answer the question : **Does the** ***Meshed*** **or** ***Before*** **approach have any** ***positive benefits on memory recall*** **when it comes to remembering content?**
+
+<br> 
+
+Let's examine the experiment in more detail to determine how we can answer this question.
+
+
+## {.tabset .tabset-fade}
+
+### Experiment Details 
+
+---
+
+People sat at computers to take a memory test, and the process would go as follows:
+
+<br>
+
+Step 1)  40 words were shown on the screen one at a time
+    - Each word stayed for 2 seconds
+    
+Step 2)  After seeing all the words, they did some simple math problems for 15 seconds
+    - This was to stop them from remembering the words right away
+
+Step 3)  They then tried to write down as many words as they could remember 
+    - They had up to 5.3 minutes to do this
+    
+<br>
+
+The process of showing words and recalling words was repeated four times with the same list of words each time (four chances to get it right). 
+    - The presentation of the first trial was the same for all treatment conditions.
+    - EXCEPT trials 2, 3, and 4 were slightly different for each treatment condition
+
+---
+
+
+### Recall Groups
+
+---
+
+They tested 30 students, split into three groups of 10 each. The groups were called SFR, Before, and Meshed:
+
+<br>
+
+(1) **The SFR group (the control group)**
+    - stands for Standard Free Recall
+    - In all four trials the same list of 40 words was presented, in a random order each time
+    
+<br>
+
+(2) **The Before group** 
+    - also used the same 40 words during each trial
+        - But there's a *twist*: words that people remembered correctly in earlier tests were shown first. These came before the words they didn't remember last time.
+        - After showing all the words people remembered correctly in a random order, they then showed the words people didn't remember, also in a random order
+        
+<br>
+        
+(3) **The Meshed group**
+    - also used the same 40 words during each trial
+        - But there's a *twist*: They mixed up the words people remembered with the ones they forgot. 
+        - So, a word someone got right before would come first, then a word they missed, then another word they got right, and so on.
+
+---
+
+
+### Data Results
+
+---
+
+The researchers counted how many words each student remembered correctly on their fourth try.
+
+
+```{r}
+datatable(Friendly, options=list(lengthMenu = c(3,10,30)))
+```
+
+---
+
+There are a total of 30 participants, however each group consists of 10 people each. Therefore, there the small sample size will effect the calculations going forward. In order to test whether or not there are positive benefits that come from either recall method, we will conduct a **Wilcoxon Rank Sum (Mann-Whitney) Test** to test the medians of each approach's distribution against the control group. 
+
+
+---
+
+
+
+## Hypothesis
+
+---
+
+In order to see if positive benefits come from either recall method, we will conduct two **Wilcoxon Rank Sum Tests** comparing the center distributions of each recall method to the control group (SFR). 
+
+The level of significance for both Wilcoxon Tests will be the same: 
+
+
+$$ \alpha = 0.05 $$
+
+<u>The null hypothesis and alternative hypothesis for both tests will be:</u>
+
+<br>
+
+
+$$ H_0:\text{the distibutions are stochastically equal} $$
+  
+$$ H_a:\text{one distribution is stochastically different than the other}  $$
+
+<br> 
+
+***Note***: When we describe our distribution as **stochastically** equal or different, we are just pointing out if the distributions are **significantly** equal or different.
+
+<br>
+
+---
+
+### The Before Hypothesis
+
+--- 
+
+The hypothesis that the Before group's distribution will be different than the SFR group's can be explained by the concept of **information overload**. According to the *National Library of Medicine*, a consistent feature found in information overload describes that "the amount of information is initially related to better performance or better decisions but that, above a certain amount of information, the effect changes, and the amount of information leads to worse outcomes" (Arnold et al., 2023). When individuals are presented with an excessive amount of new information at once, they may struggle to process each section effectively. The brain enters a challenging state as it attempts to retain previously learned information while simultaneously processing and storing new data. Given the time constraints for analyzing the information, participants are more likely to experience cognitive overload. This may result in a greater tendency to forget initially correct responses as the mind makes room for new information. Thus, the distribution of people's scores could be farther apart. 
+
+<br>
+
+---
+
+### The Meshed Hypothesis
+
+---
+
+The assumption that the Meshed group's distribution will differ from the SFR group's can be supported by the concept of **memory updating**. According to the *National Library of Medicine*, "successful updating of memory involves strengthening the more current memory trace, weakening the older information, and/or differentiating old and new memories, in order to ensure that the old memory is less interfering"(Ye et al., 2020). The constant switching between new and old information in the Meshed group allows the brain to adapt to this rhythm, potentially avoiding confusion that might occur when transitioning between processing new information and recalling old information. Consequently, this approach may lead to a more consistent distribution of people's scores, with results clustered more closely together. 
+
+<br> 
+
+
+---
+
+## Analysis
+
+---
+
+The following graph presents a side-by-side dot plot (with box plots overlaid) of each test group. The box plots are able to help us visually compare the distribution of the control group to each recall method. The dot plot shows the differences in correct words for each individual. 
+
+The very left **off- white** box plot is the **control group**, the middle **light-yellow** box plot is the **before group**, and the very right **orange** box plot is the **meshed group**. The **bright red line** in each box plot represents the **median** of each group. 
+
+<center>
+```{r message=FALSE, warning=FALSE}
+StanBeef <- filter(Friendly, condition == "Before, SFR")
+
+StanMeesh <- filter(Friendly, condition == "Meshed, SFR")
+
+
+Friendly$condition <- factor(Friendly$condition, levels=c("SFR","Before","Meshed"))
+
+ggplot(data = Friendly, aes(x = as.factor(condition), y = correct, fill=as.factor(condition))) +
+geom_boxplot()  +
+stat_summary(fun.y = median, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..),
+   width = .75, linetype = "solid", color="orangered1") +
+theme_light() +
+theme(panel.grid.major=element_blank()) +
+scale_fill_manual(values = c("seashell1", "lightgoldenrod1","darkgoldenrod1")) +
+geom_jitter(width=0.1, height=0) +
+labs(title = "The Effects of Memory Techniques",
+   x="Recall Methods",
+   fill="condition",
+   y="Number of words correctly recalled")
+
+```
+
+</center>
+
+---
+
+Based on the graph, we are able to see that both recall methods produce positive benefits when comparing each method to the SFR control group. The medians of the Before and Meshed groups are notably higher, yet while each graph looks significantly different in size, the distribution of data looks slightly similar. Also, we are able to see that there were a number of people who had shared the same scores within each recall method.
+
+Additionally, none of the box plots are normally distributed. We can tell this based off the placement of the median. If the median is more to the bottom of the box plot (such as the SFR and Meshed groups), it will be **right skewed**. If the median is more to the **top** of the box plot (such as the Before group), it will be **left skewed**. The dot plot also shows us that the scores of people in the SFR and the Before group have more variety as they are depicted spread apart, while the scores of people in the Meshed group are seen closer together. 
+
+However, we cannot base off our assumptions on the graph alone. To support the graphs findings, the numerical summaries of each group are depicted below. 
+
+---
+
+```{r}
+Friendly %>%
+  group_by(condition) %>%
+  summarise(Min = min(correct), Median = median(correct), Mean = mean(correct), Max = max(correct), SD = sd(correct), `Sample Size` = n()) %>%
+pander(caption="Summary of Recall Methods")
+```
+
+
+---
+
+To further validate the findings from our graphical and numerical summaries, we will conduct a **Wilcoxon Rank Sum Test**. While each summary reveals distinct differences in the data, several factors must be considered to ensure the validity of these findings. One challenge we face is the presence of ties—instances where two or more individuals have the same score—which will affect the calculation of the p-value. Additionally, each group has a small sample size. To address these issues, we'll approximate the p-value and apply a continuity correction when conducting our tests.
+
+<br>
+
+---
+
+The following shows the two tests for each recall group:
+
+<br> 
+
+<div style="display: flex; justify-content: space-around;">
+  <div>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+pander(wilcox.test(Friendly$correct[Friendly$condition == "Before"], Friendly$correct[Friendly$condition == "SFR"], mu=0, alternative ="two.sided", conf.level= 0.95), caption="Wilcoxon Rank Sum Test of the Before Group")
+```
+
+  </div> 
+  <div>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+pander(wilcox.test(Friendly$correct[Friendly$condition == "Meshed"], Friendly$correct[Friendly$condition == "SFR"], mu=0, alternative ="two.sided", conf.level= 0.95), caption="Wilcoxon Rank Sum Test of the Meshed Group")
+```
+
+  </div>
+</div>
+
+<br>
+
+
+<u>Comparing the p-value to the level of significance for
+each test:</u>
+
+<br>
+
+<div style="display: flex; justify-content: space-around;">
+  <div>
+
+<center>
+$$ \text{Before Group p-value} = 0.04555 < \alpha$$
+
+<br>
+
+There is **sufficient evidence** to **reject** the null hypothesis.
+
+</center>
+
+
+ </div> 
+  <div>
+  
+<center>
+$$ \text{Meshed Group p-value} = 0.1015 > \alpha$$
+
+<br>
+
+There is **insufficient evidence** to **reject** the null hypothesis. 
+
+</center>
+
+ </div>
+</div>
+
+---
+
+## Interpretation
+
+---
+
+Based on our findings from each Wilcoxon Test, we can conclude two things:
+
+<br>
+
+(1) Between the **Control Group (SFR)** and the **Before Group**, *one distribution is stochastically different than the other*
+
+The side-by-side box plot and numerical summary help us visualize the distribution of each group. The distributions in the box plots differ, with the Control Group being right-skewed (median line closer to the bottom) and the Before Group being left-skewed (median line closer to the top). There's also a significant difference of **12 words** between the medians. Therefore, **there is sufficient evidence suggesting positive benefits from using the Before Approach.**
+
+<br>
+
+(2) Between the **Control Group (SFR)** and the **Meshed Group**, *the distributions are stochastically equal*
+
+Although the medians differ by **9.5 words**, both groups' distributions are right-skewed (with median lines near the bottom). This similarity suggests that the difference in medians may be due to simple random sampling rather than a meaningful effect. Consequently, **there is insufficient evidence to support that there are positive benefits that come from the Meshed Approach.**
+
+<br>
+
+After analyzing all factors, the Before Approach shows more significant improvements in memory recall compared to the Control group than the Meshed Approach.
+
+---
+
+Sources: 
+
+- `Friendly` Data set
+
+    - Friendly, M. and Franklin, P. (1980) Interactive presentation in multitrial free recall. Memory and Cognition 8 265–270 [Personal communication from M. Friendly].
+    
+- *National Library of Medicine* Website
+
+    - Arnold, M., Goldschmitt, M., & Rigotti, T. (2023, June 21). Dealing with information overload: A comprehensive review. Frontiers in psychology. [https://pmc.ncbi.nlm.nih.gov/articles/PMC10322198/](https://pmc.ncbi.nlm.nih.gov/articles/PMC10322198/)
+    
+    - Ye, Z., Shi, L., Li, A., Chen, C., & Xue, G. (2020, May 18). Retrieval practice facilitates memory updating by enhancing and differentiating medial prefrontal cortex representations. eLife. [https://pmc.ncbi.nlm.nih.gov/articles/PMC7272192/](https://pmc.ncbi.nlm.nih.gov/articles/PMC7272192/)
+
+- Inspiration from Wilcoxon Rank Sum Test Examples
+
+    - [Bug Spray Example](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/Analyses/Wilcoxon%20Tests/Examples/BugSprayWilcoxonRankSum.html)
+
+    - [Moral Integration of American Cities](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/Analyses/Wilcoxon%20Tests/Examples/MoralIntegration.html)
+
+
+- Chat GPT for answering my questions and error codes
+
+

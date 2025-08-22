@@ -1,0 +1,235 @@
+---
+title: "<center>Predicting the Weather</center>"
+output: 
+  html_document:
+    theme: spacelab
+    code_folding: hide
+
+---
+
+```{r message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(haven)
+
+```
+
+# Background
+
+For this study, we were tasked with **predicting the "Actual Maximum Air Temperature" for this coming Monday, January 13th at BYU-Idaho**. BYU-Idaho is located in the city of Rexburg, Idaho, and thus we will use this city's weather recordings from [timeanddate.com](https://www.timeanddate.com/weather/@5605242/historic?month=1&year=2025) to make our predictions. 
+
+<center>
+
+```{r}
+leaflet() %>%
+  addProviderTiles(providers$Esri.WorldTopoMap, group = "World Map") %>% 
+  addProviderTiles(providers$Esri.WorldImagery, group = "Terrain Map") %>%
+  setView(lng = -111.7864, lat = 43.8225, zoom = 13) %>%  # Set the view to Rexburg, Idaho
+  addLayersControl(
+    baseGroups = c("World Map", "Terrain Map"), options = layersControlOptions(collapsed = FALSE)
+  )
+
+
+```
+
+
+</center>
+
+<br>
+
+The specific data points/temperatures that were recorded from January 13th's from previous years. The temperatures that were recorded was the high temperature at the beginning of the day (STARTMAXTEMP column) and the overall max temperature of that day(MAXTEMP column). Click the `tabs` below to see the data that was collected.
+
+# { .tabset .tabset-pills}
+
+## Hide Data
+
+---
+
+## Show Data
+
+```{r message=TRUE, warning=FALSE}
+
+janweather <- read.csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/JanWeather.csv")
+
+datatable(janweather, options = list(pageLength = 10, lengthMenu = c(3, 10, 30)))
+```
+
+
+
+<br>
+
+---
+
+# Analysis
+
+With the data collected above, we will be using a **simple linear regression** to predict what the max temperature will be on January 13, 2025. The red dot represents 
+
+Based on the graph below, it seems to be that **the higher the beginning max temperature of the day is, the higher the overall max temperature will be.** Regardless, we must be careful to trust this final verdict until after we conduct our **simple linear regression**.  
+
+Additionally, we can see the <span style="background-color:pink;">confidence interval</span> of the true line and the <span style="background-color:lightgreen;">prediction interval</span>of the average Max Temperature of the day. 
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+prediction <- data.frame(
+  STARTMAXTEMP=16,
+  MAXTEMP= 26,
+  label = "Prediction Point : 26°F"
+)
+
+janlm <- lm(MAXTEMP ~ STARTMAXTEMP, data=janweather)
+
+predi.c <- predict(janlm, data.frame(STARTMAXTEMP=16), interval= "confidence")
+predi.p <- predict(janlm, data.frame(STARTMAXTEMP=16), interval= "prediction")
+
+janweathery_plot <- ggplot(janweather, aes(x = STARTMAXTEMP, y = MAXTEMP)) +
+  geom_point(
+    aes(
+      text = paste(
+        "Date:", DATE, "<br>",
+        "Start Max Temp. of the Day:", STARTMAXTEMP, "\u00b0F<br>",
+        "Max Temp. of the Day:", MAXTEMP, "\u00b0F"
+      )
+    ),
+    size = 2,
+    color = "darkblue"
+  ) +
+  geom_smooth(method = "lm", formula= y~x, se = FALSE, color = "dodgerblue") +
+  labs(
+    title = "Weather Patterns from January 13th's of the Past",
+    x = "Max Start Temperature of the Day (\u00b0F)",
+    y = "Max Temperature of the Day (\u00b0F)"
+  ) +
+  geom_point(data=prediction,
+             aes(x=STARTMAXTEMP, y=MAXTEMP),
+             size = 3,
+             color= "red") +
+  geom_text(
+    data = prediction,
+    aes(x = STARTMAXTEMP, y=MAXTEMP, label = label),
+    nudge_x = -3.6,
+    nudge_y = 1.5,
+    color= "red",
+    size = 3
+  ) +
+  geom_segment(aes(x=16, xend=16, y=predi.p[2], yend=predi.p[3]), alpha = 0.1, color= "lightgreen", lwd = 3) +
+  geom_segment(aes(x=16, xend=16, y=predi.c[2], yend=predi.c[3]), alpha = 0.1, color= "pink", lwd = 3) +
+  theme_minimal()
+
+ggplotly(janweathery_plot, tooltip = "text")
+```
+
+</center>
+
+<br>
+
+---
+
+# Simple Linear Regression Test
+
+By using a simple linear regression, our study is then represented by the mathematical model below: 
+
+$$\underbrace{Y_i}_\text{MAXTEMP} = \overbrace{\beta_0}^\text{Intercept} + \overbrace{\beta_1}^\text{Slope} \underbrace{X_i}_\text{STARTMAXTEMP}+ \epsilon_i \text{ where} \sim N(0,\sigma^2)$$
+
+| Part | What is tells us | 
+|---|---|
+| $Y_i$ | The predictor variable (what we are predicting) |
+| $X_i$ | The explanatory variable (what we use to find the predictor variable) |
+| $\beta_0$ | Intercept : Sets the starting point of the line |
+| $\beta_i$ | Slope: the change in the average y-value for a one unit change in the x-value |
+
+<br>
+
+Between Intercept ($\beta_0$) and Slope ($\beta_1$), **slope** is the most meaningful variable to analyze out of the two. The slope will be able to tell us what our change in the overall max temperature would be based on the a one-unit increase in starting max temperature. Looking at intercept would only tell us what the overall max temperature would be like if the max starting temperature of the day is zero, so the intercept would not be of interest. Thus, our hypothesis and our level of significance is depicted as follows: 
+
+<center>
+
+$$H_0 : \beta_1 = 0$$
+
+$$H_a : \beta_1 \neq 0$$
+
+$$\alpha = 0.05$$
+</center>
+
+
+Now that our model and regression has been more defined, we can conduct our linear regression as shown below as well as the updated version of our mathematical models with our estimated values. 
+
+<br>
+
+```{r}
+summary(janlm)%>%
+  pander()
+```
+
+$$\underbrace{\hat{Y_i}}_\text{Prediction MAXTEMP} = 13.68 + 0.743 \underbrace{X_i}_\text{STARTMAXTEMP}$$
+<br>
+
+Our mathematical model now states that, every *increase of one degrees F* ($X_i$) in starting max temperature results in a *0.743 degrees F increase* in the average maximum temperature of that day($Y_i$).
+
+The meaningfulness of our slope shows to be significant due to our low p-value of **0.0008698**. To further confirm the truth in our findings, consult the `tabs` below to **check the appropriateness** of the model. 
+
+# { .tabset .tabset-pills}
+
+## Hide Diagnostic Plots
+
+---
+
+## Show Diagnostic Plots
+
+
+```{r}
+par(mfrow=c(1,3))
+
+plot(janlm, which=1)
+
+qqPlot(janlm, id=FALSE, main= "Q-Q plot", col="darkblue", col.lines = "dodgerblue", pch = 16)
+
+plot(janlm$residuals, main="Residuals vs Order")
+```
+
+Overall, **everything checks out**. The randomly scattered residuals from the residuals vs. fitted-values plot shows signs of good constant variance and linear relation. The dots in the Q-Q Plot are all within the bounds of normality. Additionally, the residuals in our final residuals vs. order plot shows no trends or order so the error terms can be assumed to be independent.
+
+<br>
+
+---
+
+# Interpretation
+
+Due to the graphs and **simple linear regression test**, we are able to hopefully **predict the maximum temperature of future days based on the starting max temperature of the day**. 
+
+The scatter plot we made showed that **if the starting weather of the day was low or high, that would tell us that the overall temperature or that day would remain relatively around that low or high range**. With the test, we were able to find that the impact of the starting max temperature of the day was meaningful to predicting the overall max temperature of the day due to our extremely low p-value (p-value = 0.0008698). For that reason, it is safe to say that every *increase of one degrees F* ($X_i$) in starting max temperature results in a *0.743 degrees F increase* in the average maximum temperature of that day($Y_i$).
+
+To further support these findings, they were checked by the diagnostic plots for their appropriateness and passed all three of them. Therefore, we are able to trust the predicted results as follows.
+
+<br>
+
+---
+
+# Sources
+
+- Chatgpt
+  - For helping me fix errors when I hit a road block
+  
+- Formatting
+  - My old [weather analysis](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/325Analyses/Linear%20Regression/Weather.html)

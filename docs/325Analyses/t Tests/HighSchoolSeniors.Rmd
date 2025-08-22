@@ -1,0 +1,256 @@
+---
+title: "High School Seniors t Test"
+output: 
+  html_document:
+    theme: cosmo
+    highlight: textmate
+    code_folding: hide
+
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(readr)
+library(car)
+
+HSS <- read_csv("../../Data/HighSchoolSeniors.csv")
+#If this code does not work: 
+#Use the top menu from RStudio's window to select "Session, Set Working Directory, To Source File Location", and then play this R-chunk into your console to read the HSS data into R. 
+
+## In your Console run View(HSS) to ensure the data has loaded correctly.
+```
+
+---
+
+<!-- Instructions
+
+1. Use the HSS dataset in R to come up with a question that can be answered with a t Test. 
+
+Here is a link to the survey given to the students that participated in the study:
+https://ww2.amstat.org/censusatschool/pdfs/C@SQuestionnaire.pdf
+(Use the link to learn about what each column of data in the data set represents.)
+
+2. Establish why your question is interesting and rephrase the question using a statistical "null" and "alternative" hypothesis. (Hint, see the "Math 325 Notebook -> R Help -> R-Markdown Hints" page of your textbook for instructions on how to write mathematical hypotheses.)
+
+3. Clearly answer your question using statistics. Be sure to compute a p-value and provide supporting numerical and graphical summaries. If your conclusions don't have numbers in them, they likely are not detailed enough to be meaningful conclusions.
+
+Note: you can create "groups" from the data in many ways. For example, suppose you wanted to create a variable that grouped people according to whether they thought recycling was more important than conserving water. You could do this by:
+
+```{r}
+HSS <- HSS %>%
+  mutate(recycling_than_water = ifelse(Importance_recycling_rubbish >	Importance_conserving_water, "Recycling More Important", "Water Conservation More Important"))
+```
+
+4. Include Q-Q Plots checking the normality of the data and discuss if the requirements of the test are satisfied for your data or not. Note that Q-Q Plots are not graphics, they are diagnostic plots diagnosing the normality of the data.
+
+
+-->
+
+## Background
+
+<br>
+
+A school questionnaire titled, [U.S Census at School Questionnaire](https://ww2.amstat.org/censusatschool/pdfs/C@SQuestionnaire.pdf), was created by the organization *Census at School* and dispersed to high school seniors throughout the United States. The questionnaire contained a series of 40 questions which ranged from their physical attributes to their personal judgment. The data is contained in the HSS data set.
+
+Given the vast amount of data to work with, we were able to reorganize and zone in a particular question: 
+
+**Which students have a** ***fastest*** **reaction time on average, those who play outdoor activities more or those who play video games more?**
+
+<br>
+
+
+---
+
+## Hypothesis
+
+```{r}
+HSS.GJ <- select(HSS, c(Reaction_time,Outdoor_Activities_Hours,Video_Games_Hours)) %>%
+  filter_all(all_vars(!is.na(.))) %>%
+  filter(Outdoor_Activities_Hours != Video_Games_Hours) %>%
+  filter(abs(Outdoor_Activities_Hours - Video_Games_Hours) >= 10) %>%
+  filter(Reaction_time > 0.1 & Reaction_time < 0.4) %>%
+  mutate(More_Activity = if_else(Video_Games_Hours > Outdoor_Activities_Hours, "Gamer", "Jock")) %>%
+  rename(`Reaction Time (Seconds)` = Reaction_time) %>%
+  rename(`Time Spent Outside (Hours)` = Outdoor_Activities_Hours) %>%
+  rename(`Time Spent Playing Video Games (Hours)` = Video_Games_Hours) %>%
+  rename(`Gamer or Jock?` = More_Activity)
+
+
+HSS.G <- select(HSS.GJ, c(`Reaction Time (Seconds)`,`Gamer or Jock?`)) %>%
+  filter(`Gamer or Jock?` == "Gamer")
+
+
+HSS.J <- select(HSS.GJ, c(`Reaction Time (Seconds)`,`Gamer or Jock?`)) %>%
+  filter(`Gamer or Jock?` == "Jock")
+
+```
+
+The data provided from the *Census at School* questionnaire contained a variety of data. For this reason, the data has been filtered down to show the student's reaction time (given in seconds) as well as the time they spend on outdoor activities and video game activities per week (given in hours).
+
+In order to find out what is considered a *fast* reaction time, we conducted some preliminary research. According to the platform [*PubNub*](https://www.pubnub.com/blog/how-fast-is-realtime-human-perception-and-technology/), the **fastest reaction time is around 100 milliseconds (0.1 seconds) while most average more than 250 milliseconds (0.25 seconds)**. While we're focusing on the *fastest* average reaction times, analyzing only students who achieved reaction times between 100-200 milliseconds would create too small a sample size. To address this, we expanded our data set to include reaction times **between 100 and 400 milliseconds**, capturing both fast and moderate responses. This approach allows us to maintain a focus on the quickest reactions while ensuring a sufficiently large data set for our study. It also effectively excludes extremely slow responses from the original data set.
+
+Those who spend more hours a week on outdoor activities are classified as "Jocks", and those who spend more on video games are considered "Gamers". While many of the students in the data set have spent hours doing both, those who spend 10 hours more in one or the other determines their classification. Thus, the student must have **at least 10 hours a week in either activity to receive a category**. An additional column was then made to display their classification. 
+
+<br>
+
+---
+
+```{r}
+datatable(HSS.GJ, options=list(lengthMenu =c(3,10,30)), extensions="Responsive")
+```
+
+
+<br>
+
+Using this data set, we will implement an **Independent Samples t-Test** to address this study's research question. The null and alternative hypothesis are written as: 
+
+
+<br>
+
+$$ H_0: \text{There is no significant difference in average fastest reaction times between jocks and gamers} $$
+
+$$ H_a:\text{There is a significant difference in average fastest reaction times between jocks and gamers} $$
+
+<br>
+
+Additionally, our **significance level** for this study will be : 
+
+$$
+  \alpha = 0.05
+$$
+
+<br>
+
+---
+
+## Analysis
+
+<br>
+
+The following side by side box plots summarize the sample statistics of each group. The statistics shown include the Minimum, 1st Quartile, Median, 3rd Quartile, and Maximum.
+
+** *Hover over each box plot to see each group's summary statistics.*
+
+
+```{r}
+plot_ly(HSS.GJ, y=~`Reaction Time (Seconds)`, x=~as.factor(`Gamer or Jock?`),type="box",color=~`Gamer or Jock?`, colors=c("lightblue","lightgreen")) %>%
+  layout( title="High School Students' Reaction Times",yaxis=list(title="Reaction Time (sec)"),xaxis=list(title=""))
+```
+
+---
+
+As we compare the two groups, there appears to be a noticeable difference in reaction times. To further confirm these observations, we will now  use an **Independent Samples t-Test** to further confirm these findings.
+
+<br>
+
+
+However, the Independent Samples t-Test has two requirements before proceeding: 
+
+(1) Both samples are **representative of the population** (via Simple Random Sampling)
+
+(2) The sampling distribution of the difference sample means can be **assumed to be normal**
+
+
+<br>
+
+The questionnaire used was given out to a variety of students across the United States, as a result fulfilling that first requirement through simple random sampling. As for the second requirement, **we must determine the normality of each group through the use of a QQ Plot**. 
+
+** *Each QQ Plot is shown below*
+
+
+---
+
+```{r message=FALSE, warning=FALSE}
+qqPlot(HSS.G$`Reaction Time (Seconds)`, main ="Gamer Reaction Times",ylab= "Reaction Time (sec)",col="green3",col.lines = "lightgreen", pch= 19, id= FALSE)
+```
+
+```{r message=FALSE, warning=FALSE}
+qqPlot(HSS.J$`Reaction Time (Seconds)`, main ="Jock Reaction Times", ,ylab= "Reaction Time (sec)", col="lightblue3",col.lines = "lightblue", pch= 19, id= FALSE)
+
+``` 
+
+---
+
+<br>
+
+According to each QQ plot, the data set **fails the test of normality**. While the majority of the data falls within the boundaries of normality, both groups have a few outliers that result in slight skewness. Despite this, the large sample size is sufficient to compensate for the data's skewness. Consequently, the results of the test can still be considered valid.
+
+
+With our two requirements fulfilled, we can now conduct our Independent Samples t-Test on the data set.
+
+** *The results of the test are shown below.* 
+
+
+---
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+pander(t.test(`Reaction Time (Seconds)`~`Gamer or Jock?`, data=HSS.GJ, mu=0, alternative="two.sided", conf.level=0.95),caption="Independent Samples t Test of Gamers vs. Jocks Reaction Times", split.table=Inf)
+```
+
+<br>
+
+
+Comparing our given p-value to our level of significance, we are shown that: 
+
+
+<center>
+($p = 0.3106 > \alpha$)
+</center>\
+
+
+<br>
+
+
+Given the high p-value, we are given insufficient evidence to prove that the alternative hypothesis is true and reasonable grounds to **fail to reject the null hypothesis**. Therefore, there is no significant difference in average fastest reaction times between gamers and jocks. 
+
+<br>
+
+---
+
+## Interpretation
+
+<br>
+
+With the data shown from the plots and the t-Test, there appears to be a similar average quick reaction time between those who spend more time on outdoor activities and those who spend more time on video games. 
+
+While the average fastest reaction time for Jocks (0.3264 seconds) was lower than Gamers (0.3373 seconds), it is only a difference of around 0.0109 of a second. This difference could be effected by the outliers in each group since the Gamer group has outliers in the high end, while the Jock group has outliers in the lower end. At face value, this difference is very minuscule to be considered something significant. 
+
+A recommendation for further studies is to adjust the sampling method when collecting data. While the current data was gathered from a questionnaire that was dispersed to schools throughout the United States, the chosen schools were participating in the *Census at School* program. This suggests that the data may be biased towards high-performing students. Widening the criteria to include schools outside this program would provide a more representative sample of the population, thus reducing the bias inherent in the current data set.
+
+<br>
+
+---
+
+<u>Sources:</u>
+
+
+- U.S. Census at School Questionnaire
+    - [https://ww2.amstat.org/censusatschool/pdfs/C@SQuestionnaire.pdf](https://ww2.amstat.org/censusatschool/pdfs/C@SQuestionnaire.pdf)
+    
+<br>
+  
+- *How fast is Real-Time? Perception & Technology.* (n.d.). PubNub.
+    - [https://www.pubnub.com/blog/how-fast-is-realtime-human-perception-and-technology/](https://www.pubnub.com/blog/how-fast-is-realtime-human-perception-and-technology/)
+
+<br>
+
+- Formatting inspiration
+    - [Rail Trail t Test Example](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/Analyses/t%20Tests/Examples/Student2Independent.html)
+
+
+
+
+
+
+

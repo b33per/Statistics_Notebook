@@ -1,0 +1,341 @@
+---
+title: "<center>Acura TL Selling Price</center>"
+output: 
+  html_document:
+    theme: darkly
+    code_folding: hide
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+
+acuraprices <- read_csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/acuraprices.csv")
+```
+
+
+## Overview
+
+<br>
+
+Our **Simple Linear Regression** analysis and accompanying graphics revealed that ***there is a correlation between car price and mileage that we can take advantage of to predict how much we can sell my current vehicle based on mileage***.
+
+Our model indicated that for every **1 unit increase** in mileage, a Acura TL's selling price would decrease by $5.359 e^{-6}$ **units** as well. In other words, **lower price correlated with higher mileage** and vice versa.
+For my car specifically, the slope ended up coming out to **-0.058**, showing a greater depreciation in price as my car's mileage increases. Therefore, the best time for me to sell my car for the best price according to the transformed data is at **10000** for around **$10536.84**. 
+
+Focusing on the slope, we obtained a p-value of **0.001082**, indicating a **statistically significant relationship between the two variables**.
+
+However, it's crucial to note that **since the data set violated one of the Simple Linear Regression assumptions, these interpretations and recommendations should be viewed with caution**. While these findings may not be conclusive, they head us in the right direction of when and how much to sell for my current vehicle.
+
+
+## {.tabset .tabset-fade}
+
+*To see the background, click the section below*
+
+### Hide Background
+
+<br>
+
+---
+
+### Show Background
+
+The car that I own is an Black 2014 Acura TL. I technically don't own it since it is my husband's car, but I drive it all the same. In this study, ***we will be demonstrating my vehicle's "purchase cost per mile" by comparing the price my husband paid to the price and mileage for when he plans to sell** as well as when would be the **best time to sell** to get the best dollar-per-mile value with regards to the purchasing costs of our vehicle.
+
+When collecting the data, I chose the listings of other Acura TL's from three different car selling websites ranging from different mileages and prices. The only thing that I could think about that could possibly effect the pricing of the cars I've chosen is that the car that we bought was from Phoenix, Arizona and the cars listed all come from with a 20 mile radius of Rexburg, Idaho. But otherwise, there should be no other tampering with the data. In the table, I list the year of the car, the mileage, and the Price of said car. Each row listed is another Acura TL.
+
+```{r}
+datatable(acuraprices, options = list(pageLength = 5)) %>%
+  formatStyle(columns = names(acuraprices),color= "white") %>%
+  htmltools::tagList(tags$style(HTML("thead th {color: mediumseagreen !important; font-weight: bold !important; }")))
+```
+
+
+---
+
+## Analysis
+
+## {.tabset .tabset-fade}
+
+<br>
+
+The graphic below shows us the side by side of regression of the original data as well as the transformed data with the box cox suggestion. 
+
+The transformed graph shows my car's position and its predicted selling price. The slope calculation below reveals the model's estimate of my car's price depreciation as mileage increases.  
+
+$$ m = \frac{14000 - 10536.84}{40000 - 100000} = -0.0577193333333 $$
+
+<br>
+
+Additionally, we can see in the transformation graph the <span style="background-color:pink;">confidence interval</span> that tells us the estimate of where the average selling price for a Acura TL is and the <span style="background-color:lightgreen;">prediction interval</span> that estimates where an individual car's selling price might land. 
+
+Examining my car's data point specifically, while it falls within the prediction interval, it lies outside the confidence interval. **This indicates that I paid more than average for a car with this mileage.**
+
+*Hover over each dot to see specific scores*
+
+<div style="display:flex;justify-content:space-around;">
+<div>
+
+
+```{r message=FALSE, warning=FALSE,fig.height=6,fig.width=5}
+acuralm <- lm(Price ~ Mileage, data= acuraprices)
+
+lm.kachow <- lm(log(Price) ~ Mileage, data=acuraprices)
+b.kachow <- coef(lm.kachow)
+
+
+#prediction point
+mycar <- data.frame(Mileage = 40000, Price = 14000, Year = 2014)
+mysellingprice <- round(exp(b.kachow[1] +b.kachow[2] * 100000), 2)
+mycar$predictionprice <- mysellingprice
+
+acuraplot <- ggplot(acuraprices, aes(x=Mileage, y= Price, color = Year)) +
+  geom_point(size=1.5, alpha =2) +
+  geom_smooth(method="lm", formula= y~x, se=FALSE, size= 0.5, color="mediumseagreen")+
+  labs(title="Acura TL Dealership Listings \n (Original Model)", x = "Mileage", y = "Prices ($)")+ 
+  scale_color_gradient(low = "aquamarine4", high="aquamarine1") +
+  theme_minimal()+ 
+  theme(legend.position = "none")
+
+ggplotly(acuraplot)
+```
+
+
+</div>
+<div>
+
+```{r fig.height=6, fig.width=5.5, message=FALSE, warning=FALSE}
+mypred.c <- exp(predict(lm.kachow, data.frame(Mileage = 100000), interval="confidence"))
+mypred.p <- exp(predict(lm.kachow, data.frame(Mileage = 100000), interval="prediction"))
+
+yourpred.c <- exp(predict(lm.kachow, data.frame(Mileage = 40000), interval="confidence"))
+yourpred.p <- exp(predict(lm.kachow, data.frame(Mileage = 40000), interval="prediction"))
+
+acuraplotyy <- ggplot(acuraprices, aes(x=Mileage, y= Price, color = Year)) +
+  geom_point(size=1.5, alpha =2)+
+  geom_segment(aes(x=40000, xend=40000, y=yourpred.p[2], yend=yourpred.p[3]), alpha = 0.02, color= "lightgreen", lwd=3)+
+  geom_segment(aes(x=40000, xend=40000, y=yourpred.c[2], yend=yourpred.c[3]), alpha = 0.5, color= "pink", lwd=3) +
+  
+  geom_segment(aes(x=100000, xend=100000, y=mypred.p[2], yend=mypred.p[3]), alpha = 0.02, color= "lightgreen", lwd=3)+
+  geom_segment(aes(x=100000, xend=100000, y=mypred.c[2], yend=mypred.c[3]), alpha = 0.5, color= "pink", lwd=3)+
+  geom_point(data = mycar, aes(x=Mileage, y = Price), color = "red", size = 3) +
+  stat_function(fun=function(x) exp(b.kachow[1] + b.kachow[2]*x), color = "aquamarine") +
+  geom_segment(data = mycar, aes(x= Mileage, y = Price, xend = 100000, yend = predictionprice), color = "red", linetype = "dashed") +
+  geom_point(data = mycar, aes(x = 100000, y = predictionprice), color = "darkred", size = 3) +
+  theme_minimal()+ 
+  scale_color_gradient(low = "aquamarine4", high="aquamarine1")+
+  labs(title="\n (Transformed Model)", x = "Mileage", y = "Prices ($)")
+
+ggplotly(acuraplotyy)
+```
+
+</div>
+</div>
+
+
+### Hide Box Cox
+
+<br>
+
+---
+
+### Show Box Cox
+
+According to the boxCox, it tells us to use the $λ = 0.5$ transformation which is the log of our y variable. 
+
+```{r}
+boxCox(acuralm)
+```
+
+<br>
+
+This transformation could be represented with the following equations: 
+
+$$ \hat{Y_i}^′ = \beta_0 + \beta_1X_i \\
+log(\hat{Y_i}^′) = \beta_0 + \beta_1X_i \\
+\hat{Y_i} = e^{(\beta_0 + \beta_1X_i)}$$
+
+<br>
+
+---
+
+## Appendix
+
+## {.tabset .tabset-fade}
+
+To further confirm our findings, we will now conduct a **Simple Linear Regression** on the data set.
+
+<br>
+
+---
+
+### Hide Tests
+
+<br>
+
+---
+
+### Hypothesis
+
+<br>
+
+In ***linear regression***, the key points of interest are the **y-intercept** and the **slope**. The y-intercept isn't particularly helpful in this case, as it only tells us the the price of a car that has zero mileage. Instead, we'll focus on the **slope**, which reveals *how prices change relative to the amount of mileage a car has*. 
+
+$$\underbrace{Y_i}_\text{Prices} = \overbrace{\beta_0}^\text{Y- intercept} + \overbrace{\beta_1}^\text{Slope} \underbrace{X_i}_\text{Mileage} +  \epsilon_i \space where \space \epsilon_i \sim N(0,\sigma^2)$$
+
+Yet, as the boxCox suggested, we need to our response variable to better fit our model. Our hypotheses will be based on this relationship:
+
+$$H_0 : \beta_1 = 0$$
+$$H_a :\beta_1 \neq 0$$
+
+<br>
+
+Additionally, our level of significance will be: 
+
+$$\alpha = 0.05$$
+<br>
+
+*Go to the next tab to see the results of our regression*
+
+---
+
+
+### Simple Linear Regression Model
+
+<br>
+
+To further confirm our findings, we will now conduct a **Simple Linear Regression** on the data set. The results are shown below:
+
+```{r}
+pander(summary(lm.kachow))
+```
+
+<br><br>
+
+
+Using the results of the **Linear Regression**, answers our question of ***how the price correlates with a car's mileage*** with the following equation (based on our transformation):
+
+
+
+
+$$\underbrace{\hat{Y_i}}_\text{Selling Price} = e^{(9.798  - 5.359e^{-6} \underbrace{X_i}_\text{Mileage})}$$
+
+
+<center>
+$$P- value = 0.00378 < \alpha$$
+</center>
+
+<br>
+
+While the model offers us great insight into our data, we must first check if we can trust the findings of this data by validating its ***appropriateness***.
+
+<br>
+
+*Go to the next tab to see how we check for appropriateness*
+
+---
+
+### Checking Simple Linear Regression Assumptions
+
+<br>
+
+There are 5 assumptions in our ***Linear Regression*** model: 
+
+1. Constant Variance
+
+2. Independent Errors
+
+3. Normal Errors
+
+4. Fixed X Values
+
+5. Linear Relation
+
+<br>
+
+The following **three diagnostic plots** will help to identify if our assumptions are violated or not. 
+
+The 4th assumption, **Fixed X Values**, can't be tested with a diagnostic plot. However, since the data was collected directly from the grade book, we can reasonably assume accurate and precise measurement of the X variable.
+
+Below are the original and transformed data's diagnostic plots. We will focus on the transformed diagnostic plots, but showing both helps demonstrate how the data transformation addresses potential violations of our required assumptions.
+
+<br>
+
+#### Original Data
+
+```{r fig.height=6,fig.width=12, message=FALSE}
+par(mfrow=c(1,3))
+
+plot(acuralm, which=1)
+
+qqPlot(acuralm$residuals, main="Q-Q Plot", col="aquamarine4", col.lines="mediumseagreen",pch= 19, id=FALSE)
+
+plot(acuralm$residuals, ylab= "Residuals", main="Residuals vs Order")
+```
+
+<br>
+
+#### Transformed data
+
+<center>
+```{r fig.height=6,fig.width=12, message=FALSE}
+par(mfrow=c(1,3))
+
+plot(lm.kachow, which=1)
+
+qqPlot(lm.kachow$residuals, main="Q-Q Plot", col="aquamarine4", col.lines="mediumseagreen",pch= 19, id=FALSE)
+
+plot(lm.kachow$residuals, ylab= "Residuals", main="Residuals vs Order")
+```
+
+</center>
+
+
+
+<div style="display: flex; justify-content: space-around;gap:35px; text-align: left;">
+  <div>
+The **Residuals versus Fitted Values plot** assesses ***Linear Relation and Constant Variance***.
+
+Despite a slight linear pattern at the end, the data shows constant variance and linearity due to randomly scattered residuals. Thus, **our 1st and 5th assumptions are NOT violated**. 
+  </div> 
+  <div>
+The **Q-Q Residuals plot** assesses **Normal Errors**. Outliers at the bottom indicate non-normality of residuals, **violating our 3rd assumption**. 
+  </div> 
+  <div>
+The **Residuals versus Order plot** checks for **Independent Errors**. With no clear pattern, we can assume residual independence, thus **NOT violating our 2nd assumption**.
+  </div>
+  </div>
+  
+
+  
+<br><br>
+
+
+While one assumption is violated due to outliers in the **Q-Q Residuals plot**, the impact on our results is not drastic. However, **interpretations should still be made cautiously**, considering the slight skewness in the data.
+
+<br>
+
+
+---
+
+
+
+
+

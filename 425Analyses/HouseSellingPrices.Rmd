@@ -1,0 +1,732 @@
+---
+title: "<center> House Selling Prices </center>"
+output: 
+  html_document:
+    toc_depth: 5
+    theme: cosmo
+    code_folding: hide
+
+---
+
+```{r message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(haven)
+library(reshape2)
+library(GGally)
+
+```
+
+
+<center>
+
+![](C:/Users/paige/OneDrive/Pictures/Panorama of Holiday resort houses Terherne.jpg)
+</center>
+
+# Background
+
+In this study, we will be exploring every aspect of residential homes in Ames, Iowa in order to predict the final price of each home. 
+
+Below, I start by mutating and determining which variables to utilize. *Click the tab below to see that exploration.*
+
+# { .tabset .tabset-pills }
+
+## Hide Data Exploration
+
+## Show Data Exploration
+
+First, we'll take a look at the pairs plot.
+
+![](C:/Users/paige/OneDrive/Pictures/full_pairs_plot.png)
+
+<br>
+
+Alright, I'll say it first, this thing is **HUGE!!** So, lets first consider some main criteria when it comes to picking a home and choose those specific variables to look at in the pairs plot. 
+
+When choosing variables, I had 3 main criteria I wanted to hit:
+
+1) Location
+2) Utilities/Space
+3) Appearance
+
+With that, I chose these variables to look at the fit my criteria. 
+
+```{r}
+train <- read.csv("train.csv", stringsAsFactors = TRUE)
+
+pairs(train [c("SalePrice", "GrLivArea","OverallQual", "TotalBsmtSF", "GarageCars", "GarageArea", "X1stFlrSF", "X2ndFlrSF", "Neighborhood", "YearBuilt","YearRemodAdd")])
+```
+
+
+<br>
+
+
+In order to fit the data with those criteria in mind, I mutated the data to fit more columns into our model. I created these new columns:
+
+- `TotalSF` : The total surface area of the house including the all floors of the house (first, second, and basement) and the garage
+- `LocationScore` : captures the **location quality** based on two factors 
+  - Neighborhood (Most popular to least popular neighborhood)
+  - Condition (Near a positive or negative feature from the house)
+- `UtilityScore` : based on the home's **usability**
+  - different features contributes a different score based on its importance/ how essential it is
+- `TimeRemodel`: The Year it was Sold - The Year it was Remodeled = Shows **how many years have passed** since it was last remodeled up to the year it sold
+  - lower values = recently remodeled
+  - hight values = older/outdated remodel
+- `OverallScore`: the **average rating** of the overall condition and overall quality/finish of the home
+
+<br>
+
+Overall, here are the variables I chose to use and what they can tell us in terms of this study. 
+
+```{r}
+# Load necessary library
+library(knitr)
+
+# Create a data frame with Variable, Description, and How it Helps Us
+table_data <- data.frame(
+  Variable = c("SalePrice", "TotalSF", "LocationScore", "UtilityScore", "TimeRemodel",
+               "Neighborhood", "OverallScore", "Neighborhood:TotalSF"),
+  
+  Description = c("The final price at which the house was sold.",
+                  "Total square footage of the house, including basement and garage.",
+                  "A score that evaluates the desirability of the neighborhood and location conditions.",
+                  "A score representing the house’s overall utility, considering space, features, and livability.",
+                  "Number of years since the last remodeling or addition was completed.",
+                  "The specific neighborhood in which the house is located.",
+                  "An average of Overall Quality and Overall Condition ratings.",
+                  "An interaction term that accounts for how the effect of total square footage varies across neighborhoods."),
+  
+  How_it_Helps_Us = c("Target variable we are trying to predict.",
+                      "Bigger houses generally sell for more, making this a key predictor.",
+                      "Homes in desirable locations tend to have higher sale prices.",
+                      "Higher utility scores indicate more livable homes, increasing value.",
+                      "More recently remodeled homes tend to sell for higher prices.",
+                      "Neighborhood greatly influences home values due to amenities and demand.",
+                      "Houses with better quality and condition typically sell for more.",
+                      "Captures how the impact of house size varies depending on the neighborhood.")
+)
+
+# Print the table in a markdown-friendly format
+kable(table_data, format = "markdown", col.names = c("Variable", "What it Looks at", "How it Helps Us"))
+
+```
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+
+
+train <- train %>%
+  mutate(TotalSF = X1stFlrSF + X2ndFlrSF + TotalBsmtSF + GarageArea) %>%
+  mutate(TotalRoom = FullBath + (HalfBath * 0.5) + BsmtFullBath + (BsmtHalfBath * 0.5) + KitchenAbvGr + BedroomAbvGr ) %>% # total amount of rooms in the house (bedrooms, bathrooms, etc.) 
+   mutate(
+    Utilities_score = case_when(
+      Utilities == "AllPub" ~ 4,
+      Utilities == "NoSewr" ~ 3,
+      Utilities == "NoSeWa" ~ 2,
+      Utilities == "ELO" ~ 1,
+      TRUE ~ 0
+    ),
+    Street_score = case_when(
+      Street == "Pave" ~ 1,
+      Street == "Grvl" ~ 0,
+      TRUE ~ 0
+    ),
+    Alley_score = case_when(
+      Alley == "Pave" ~ 2,
+      Alley == "Grvl" ~ 1,
+      Alley == "NA" ~ 0,
+      TRUE ~ 0
+    ),
+    LandSlope_score = case_when(
+      LandSlope == "Gtl" ~ 2,
+      LandSlope == "Mod" ~ 1,
+      LandSlope == "Sev" ~ 0,
+      TRUE ~ 0
+    ),
+    CentralAir_score = ifelse(CentralAir == "Y", 1, 0),
+    PavedDrive_score = case_when(
+      PavedDrive == "Y" ~ 2,
+      PavedDrive == "P" ~ 1,
+      PavedDrive == "N" ~ 0,
+      TRUE ~ 0
+    ),
+    OverallQual_norm = OverallQual / 10,  # Scale from 1-10
+    OverallCond_norm = OverallCond / 10,
+    HeatingQC_score = case_when(
+      HeatingQC == "Ex" ~ 5,
+      HeatingQC == "Gd" ~ 4,
+      HeatingQC == "TA" ~ 3,
+      HeatingQC == "Fa" ~ 2,
+      HeatingQC == "Po" ~ 1,
+      TRUE ~ 0
+    ),
+    KitchenQual_score = case_when(
+      KitchenQual == "Ex" ~ 5,
+      KitchenQual == "Gd" ~ 4,
+      KitchenQual == "TA" ~ 3,
+      KitchenQual == "Fa" ~ 2,
+      KitchenQual == "Po" ~ 1,
+      TRUE ~ 0
+    ),
+    Functional_score = case_when(
+      Functional == "Typ" ~ 5,
+      Functional == "Min1" ~ 4,
+      Functional == "Min2" ~ 3,
+      Functional == "Mod" ~ 2,
+      Functional == "Maj1" ~ 1,
+      Functional == "Maj2" ~ 0,
+      TRUE ~ 0
+    )
+  ) %>%
+  
+   mutate(
+    UtilityScore = (0.15 * Utilities_score) +
+                          (0.10 * GrLivArea) +
+                          (0.07 * TotalBsmtSF) +
+                          (0.06 * GarageArea) +
+                          (0.05 * KitchenQual_score) +
+                          (0.05 * HeatingQC_score) +
+                          (0.05 * Functional_score) +
+                          (0.04 * PavedDrive_score) +
+                          (0.03 * Alley_score) +
+                          (0.02 * Street_score) +
+                          (0.02 * LandSlope_score) +
+                          (0.02 * CentralAir_score) +
+                          (0.05 * WoodDeckSF) +
+                          (0.05 * OpenPorchSF)
+  ) %>%
+  
+  mutate( # scores based on popularity fo outside look!
+  HouseStyle = as.character(HouseStyle),
+  HouseStyle = replace_na(HouseStyle, "None"),
+  HouseStyle = as.factor(HouseStyle),
+  HouseStyle_Score = case_when( # scored on popularity
+    HouseStyle == "2.5Fin" ~ 8,
+    HouseStyle == "2Story" ~ 7,
+    HouseStyle == "1Story" ~ 6,
+    HouseStyle == "SLvl" ~ 5,
+    HouseStyle == "2.5Unf" ~ 4,
+    HouseStyle == "1.5Fin" ~ 3,
+    HouseStyle == "SFoyer" ~ 2,
+    HouseStyle == "1.5Unf" ~ 1
+  ), 
+  LotShape = as.character(LotShape),
+  LotShape = replace_na(LotShape, "None"),
+  LotShape = as.factor(LotShape),
+  LotShape_Score = case_when(
+    LotShape == "Reg" ~ 4,
+    LotShape == "IR1" ~ 3,
+    LotShape == "IR2" ~ 2,
+    LotShape == "IR3" ~ 1
+    ),
+  BldgType = as.character(BldgType),
+  BldgType = as.factor(BldgType),
+  BldgType_Score = case_when(
+    BldgType == "1Fam" ~ 5,
+    BldgType == "2FmCon" ~ 1,
+    BldgType == "Duplx" ~ 3,
+    BldgType == "TwnhsE" ~ 4,
+    BldgType == "TwnhsI" ~ 2
+    ),
+  ExterQual = as.character(ExterQual),
+  ExterQual = as.factor(ExterQual),
+  ExterQual_Score = case_when(
+    ExterQual == "Ex" ~ 5,
+    ExterQual == "Gd" ~ 4,
+    ExterQual == "TA" ~ 3,
+    ExterQual == "Fa" ~ 2,
+    ExterQual == "Po" ~ 1
+  ),
+  ExterCond = as.character(ExterCond),
+  ExterCond = as.factor(ExterCond),
+  ExterCond_Score = case_when(
+    ExterCond == "Ex" ~ 5,
+    ExterCond == "Gd" ~ 4,
+    ExterCond == "TA" ~ 3,
+    ExterCond == "Fa" ~ 2,
+    ExterCond == "Po" ~ 1)
+  ) %>%
+  
+  mutate(OverallScore = (OverallQual + OverallCond)/2) %>%
+  
+  mutate(
+    LocationScore = case_when(
+      Neighborhood %in% c("NoRidge", "NridgHt", "StoneBr", "Veenker") ~ 5,
+      Neighborhood %in% c("NWAmes", "Somerst", "Timber", "ClearCr") ~ 4,
+      Neighborhood %in% c("Sawyer", "SawyerW", "Edwards", "BrkSide") ~ 2,
+      TRUE ~ 3
+    ) + case_when(
+      Condition1 %in% c("PosN", "PosA") | Condition2 %in% c("PosN", "PosA") ~ 2,
+      Condition1 %in% c("Artery", "Feedr", "RRAn", "RRNe") | Condition2 %in% c("Artery", "Feedr", "RRAn", "RRNe") ~ -1,
+      TRUE ~ 0
+    )
+  ) %>%
+  
+  mutate(PopularNbrHd = case_when(Neighborhood %in% c("BrDale", "BrkSide", "IDOTRR", "Edwards", "MeadowV", "NridgHt", "NoRidge", "NridgHt", "Sawyer", "StoneBr")~ 1,
+                             TRUE ~ 0)) %>%
+  
+  mutate(TimeRemodel = YrSold - YearRemodAdd) %>%
+  
+  mutate(OutdoorScore = HouseStyle_Score + LotShape_Score + ExterQual_Score + ExterCond_Score + BldgType_Score)
+
+house.lm <- lm(SalePrice ~ TotalSF + LocationScore + UtilityScore + TimeRemodel + PopularNbrHd + OutdoorScore + LocationScore:TotalSF, data=train)
+
+summary(house.lm)
+
+```
+
+
+```{r}
+neigh <- lm(SalePrice ~ Neighborhood, data=train)
+
+summary(neigh)
+```
+
+
+
+```{r}
+pairs(train [c("SalePrice", "TotalSF", "TimeRemodel", "UtilityScore", "OutdoorScore", "LocationScore", "OverallScore", "Neighborhood")],panel=panel.smooth)
+```
+
+
+<br>
+
+# Visuals
+
+The visuals below will look at how each variable effect and interact each other when it comes to predicting `SalePrice`. 
+
+Some of them at a glance will be difficult to read, thus a subset of each graph will be given to look at each factor individually. *Click through the tabs to see each visual.*
+
+## { .tabset .tabset-fade }
+
+### Total Surface Area
+
+#### { .tabset .tabset-pills }
+
+##### Neighborhood
+
+***Key Findings***: 
+
+- Steeper slopes show a stronger impact `TotalSF` has on `SalesPrices`
+- More expensive neighborhoods show to have higher `SalePrices` at any given `TotalSF`(ex. StoneBr)
+
+
+```{r message=FALSE, warning=FALSE}
+TSA.N <- ggplot(train, aes(y = SalePrice, x = TotalSF, color = factor(Neighborhood))) +
+  geom_point() +
+  geom_line(aes(y = house.lm$fit, group = interaction(LocationScore)), cex = 0.5) +
+  theme_minimal()
+
+ggplotly(TSA.N)
+```
+
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = TotalSF, color = factor(Neighborhood))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() + 
+  facet_wrap(~Neighborhood)
+  
+```
+
+<br>
+
+---
+
+##### Location Score
+
+***Key Findings***: 
+
+- Between the different `LocationScore` categories, they all seem to be within the same range of square footage (they all look a big more clustered within a specific range, despite some outliers)
+- The main change is the **slope** of each category
+  - ex. `LocationScore` 5 has a steeper slope, thus the price increases more rapidly as square footage increases in comparison to `LocationScore` 4
+
+
+```{r}
+TSA.LS <- ggplot(train, aes(y = SalePrice, x = TotalSF, color = factor(LocationScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal()
+
+ggplotly(TSA.LS)
+```
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = TotalSF, color = factor(LocationScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() +
+  facet_wrap(~LocationScore)
+```
+
+<br>
+
+---
+
+##### Overall Score
+
+***Key Findings***: 
+
+- For `OverallScore` values between 3-7 that as the quality of a home improves, the `SalePrice` per `TotalSF` increases prices of homes
+  - Though, at `OverallScore` value of 7.5, there are instances where a 7.5 ranking house with a large square footage sold very low and a lower square footage home sold very high, so this graph's inperpretation is a bit confusing 
+
+```{r message=FALSE, warning=FALSE}
+TSA.OS <- ggplot(train, aes(y = SalePrice, x = TotalSF, color = factor(OverallScore))) +
+  geom_point(size=1) +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal()
+
+ggplotly(TSA.OS)
+```
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = TotalSF, color = factor(OverallScore))) +
+  geom_point(size=1) +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() +
+  facet_wrap(~OverallScore)
+```
+
+<br>
+
+---
+
+
+### Time Since Remodeling
+
+#### { .tabset .tabset-pills}
+
+##### Neighborhood
+
+***Key Findings***: 
+
+- Some of the `Neighorhood` categories (Blmngtn, NridgHt, Somerst, etc.) show that their homes are renovated at lot more recently based on how small their `TimeRemodel` values are
+  - Additionally, their steep slows show that **the more recent a house is renovated, the higher the `SalePrice`**
+  
+
+
+```{r}
+TSR.N <- ggplot(train, aes(y = SalePrice, x = TimeRemodel, color = factor(Neighborhood))) +
+  geom_point(size=1) +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal()
+
+ggplotly(TSR.N)
+```
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = TimeRemodel, color = factor(Neighborhood))) +
+  geom_point(size=1) +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() +
+  facet_wrap(~Neighborhood)
+```
+
+<br>
+
+---
+
+##### Location Score
+
+***Key Findings***: 
+
+- For the `LocationScore` of 5, the more recent something is renovated, the `SalePrice` increases based of that desirable location
+  - if it hasn't been renovated very recently, the value of the `SalePrice` decreases based on that location
+- However, the majority of `LocationScore` scores show that regardless of how late or how recent the home was renovated, **the `SalePrice` of the home stays fairly consistent or is a slight decrease, despite the `LocationScore`**
+
+```{r}
+TSR.LS <- ggplot(train, aes(y = SalePrice, x = TimeRemodel, color = factor(LocationScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal()
+
+ggplotly(TSR.LS)
+```
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = TimeRemodel, color = factor(LocationScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() +
+  facet_wrap(~LocationScore)
+```
+
+<br>
+
+---
+
+##### Overall Score
+
+***Key Findings***: 
+
+Here's a clearer way to express those observations:
+
+- The `SalePrice` patterns mirror what we observed in the `LocationScore` graphs for homes with `OverallScore` ratings between 4-6
+  - The timing of renovations (whether recent or delayed) appears to have minimal impact on `SalePrice`, regardless of the home's `OverallScore`
+
+- Interestingly, buyers show a preference for homes with lower `OverallScore` ratings, even when comparing recently and previously renovated properties
+  - This suggests that a home's fundamental quality and condition may compensate for less frequent maintenance
+
+
+```{r}
+TSR.OS <- ggplot(train, aes(y = SalePrice, x = TimeRemodel, color = factor(OverallScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal()
+
+ggplotly(TSR.OS)
+```
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = TimeRemodel, color = factor(OverallScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() +
+  facet_wrap(~OverallScore)
+```
+
+
+<br>
+
+---
+
+### Utility Score
+
+#### { .tabset .tabset-pills}
+
+##### Neighborhood
+
+***Key Findings***: 
+
+- More expensive `Neighborhood` (StoneBr, NridgHt, etc.) show a steeper slope, showing that **the higher the `UtilityScore` results in a higher `SalePrice`** (expensive places have more things)
+  - On the other end, the cheaper neighborhoods have smaller a `UtilityScore` and thus a smaller `SalePrice` (cheaper places don't have that much stuff)
+
+```{r}
+U.N <- ggplot(train, aes(y = SalePrice, x = UtilityScore, color = factor(Neighborhood))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal()
+
+ggplotly(U.N)
+```
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = UtilityScore, color = factor(Neighborhood))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() +
+  facet_wrap(~Neighborhood)
+```
+
+<br>
+
+---
+
+##### Location Score
+
+***Key Findings***: 
+
+- `UtilityScore` seems to be prioritized over `LocationScore`
+  - Regardless of the location being more or less than ideal, as `UtilityScore` increases as well as the `SalePrice`
+
+```{r}
+U.LS <- ggplot(train, aes(y = SalePrice, x = UtilityScore, color = factor(LocationScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal()
+
+ggplotly(U.LS)
+```
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = UtilityScore, color = factor(LocationScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() +
+  facet_wrap(~LocationScore)
+```
+
+<br>
+
+---
+
+##### Overall Score
+
+***Key Findings***: 
+
+- As the `OverallScore` goes from smallest to largest, we can see that the increased `UtilityScore` increases along with the `SalePrice`
+  - Thus, **`SalePrice` as `UtilityScore` increases with every increase of `OverallScore`**
+
+```{r}
+U.OS <- ggplot(train, aes(y = SalePrice, x = UtilityScore, color = factor(OverallScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal()
+
+ggplotly(U.OS)
+```
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = UtilityScore, color = factor(OverallScore))) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, size = 2) +
+  theme_minimal() +
+  facet_wrap(~OverallScore)
+```
+
+
+
+<br>
+
+---
+
+# Regression Model
+
+Now, we will put the model to use through testing as well as interpretation. 
+
+# { .tabset .tabset-pills}
+
+## Mathematical Equation
+
+This is the mathematical model of which my regression model is based off of. The following shows: 
+
+$$
+\underbrace{Y_i}_{SalePrice} = \beta_0 + \beta_1\underbrace{X_{i1}}_{TotalSF}+ \beta_2\underbrace{X_{i2}}_{LocationScore} + \beta_3\underbrace{X_{i3}}_{UtilityScore} + \beta_4\underbrace{X_{i4}}_{TimeRemodel} + \beta_5\underbrace{X_{i5}}_{Neighborhood} + \beta_6\underbrace{X_{i6}}_{OverallScore} +  \beta_7\underbrace{X_{i5}X_{i1}}_{Neighborhood:TotalSF} +
+\epsilon_i \text{ where N(0, }\sigma^2)
+$$
+
+- there being different **levels** of `Neighborhood`, `LocationScore`, and `OverallScore` within the model. 
+
+*Proceed to the next tab to see our results*
+
+<br>
+
+---
+
+## Linear Regression 
+
+After looking at this regression, the most **significant** variables are:
+
+- `LocationScore`(0.001629) : As the location quality increases, the predicted sale price of a home would increase by $5480 per location score. 
+
+- `UtilityScore`(7.724e-16) : As quality and quantity of utilities increase, the predicted sale price of a home would increase by $525.90 per utility score.
+
+- `TimeRemodel` (1.46e-05) : As the increase in year since remodeling/ renovating a home, the predicted sale price would decrease $213.10 per year.
+
+- `OverallScore`(1.221e-48) : As the overall quality and condition of a home increases, the sale price of a home would increase by $16951 per overall score. 
+
+
+
+- `NeighborhoodStoneBr`(0.04949) : When selling the houses in the Stone Brooke Neighborhood, they sell $164471 less compared to average neighborhood. Therefore, other neighborhoods might be more desirable or houses in this neighborhood could be more open to bargaining. 
+- `TotalSF:NeighborhoodEdwards` (0.02362) : For each additional surface area of house in the Edwards neighborhood, the sale price decreases $55.22 per surface area. (This due to the result of a house big house [13170 $f^2$ costing $160,000] costing less than smaller houses that cost a bigger amount of money)
+- `TotalSF:NeighborhoodStoneBr` (0.03662) : For each additional surface area of house in the Stone Brooke neighborhood, the sale price increases by $52.54 per surface area. While the neighborhood's houses itself can become fairly cheap, that still doesn't take away from the fact that when house size is involved that sale prices can increase. 
+
+***The individual results will vary by as much as 53636.***
+
+<br>
+
+The **insignificance** of some of these variables could be due to:
+
+- the **favoring** of one feature over another (ex. buyers care more about location over total surface area)
+- the similar trends/impact of multiple categories (ex. NeighborhoodClearCr and NeighborhoodDOTRR display simlar trends and don't differentiate as much as NeighborhoodStoneBr)
+
+
+```{r message=FALSE, warning=FALSE}
+# Original (train data)
+houseO.lm <- lm(SalePrice ~ TotalSF + as.factor(LocationScore) + UtilityScore + TimeRemodel + as.factor(Neighborhood) + as.factor(OverallScore) + Neighborhood:TotalSF , data=train)
+summary(houseO.lm) %>% pander()
+
+```
+
+
+<br>
+
+---
+
+## Model Validation
+
+Now, we will validate our model. The verification of this model will help us know that the model fit on this one sample of data will continue to fit well on a new sample of data. This will be verified through the **Validation Adjusted $R^2$**. This is calculated with the code below and presented with the other $R^2$ values for comparison:
+
+
+
+```{r message=FALSE, warning=FALSE}
+set.seed(12242003)
+
+
+num_rows <- min(1000, nrow(train)) #1460 total
+keep <- sample(1:nrow(train), num_rows)
+
+mytrain <- train[keep, ] #Use this in the lm(..., data=mytrain) it is like "rbdata"
+
+mytest <- train[-keep, ] #Use this in the predict(..., newdata=mytest) it is like "rbdata2"
+
+
+# lms to check w/ mytrain for data = 
+house.lm <- lm(SalePrice ~ TotalSF + LocationScore + UtilityScore + TimeRemodel + Neighborhood + Neighborhood:TotalSF + OverallScore, data=mytrain)
+
+# predict codes w/ mytest for newdata=
+yh_myhouse <- predict(house.lm, newdata=mytest)9
+
+if (sum(is.na(yh_myhouse)) > 0) {
+    yh_myhouse[is.na(yh_myhouse)] <- mean(mytrain$SalePrice, na.rm = TRUE)  # Replace NAs with mean
+}
+
+ybar <- mean(mytest$SalePrice)
+
+SSTO <- sum( (mytest$SalePrice - ybar)^2 )
+
+SSE_myhouse <- sum( (mytest$SalePrice - yh_myhouse)^2 )
+
+rs_hd <- 1 - SSE_myhouse/SSTO
+
+
+n <- nrow(mytest)
+p_myhouse <- length(house.lm$coefficients)
+
+
+rsa_myhouse <- 1 - (n-1)/(n-p_myhouse)*SSE_myhouse/SSTO
+
+
+house.table <- data.frame(`Original R2` = summary(house.lm)$r.squared, `Orig. Adj. R-squared` = summary(house.lm)$adj.r.squared, `Validation R-squared` = rs_hd, `Validation Adj. R^2` = rsa_myhouse)
+
+colnames(house.table) <- c("Original $R^2$", "Original Adj. $R^2$", "Validation $R^2$", "Validation Adj. $R^2$")
+
+knitr::kable(house.table, escape=TRUE, digits=4)
+```
+
+
+As we can see, the drop from the Original Adjusted $R^2$ to the Validation Adjusted $R^2$ goes from 0.8870 to 0.8574. Thus, with a difference of just 0.0296, we can see that the model **captures the essence of the data fairly well** and shows no signs of over fitting.
+
+```{r}
+ggplot(train, aes(y = SalePrice, x = UtilityScore)) +
+  geom_point() + 
+  theme_minimal()
+```
+
+
+<br>
+

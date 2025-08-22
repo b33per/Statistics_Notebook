@@ -1,0 +1,244 @@
+---
+title: "Stephanie's Housing Request"
+output: 
+  html_document:
+    theme: readable
+    highlight: espresso
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+**Week 2 Analysis**
+
+```{r, message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+
+
+# If you get an error stating: 
+            # Error in library(DT): there is no package called 'DT'
+            # You will need to run: install.packages("DT") 
+            # in your Console, then try "Knit HTML" again.
+
+install.packages("dplyr")
+
+Rent <- read_csv("../Data/Rent.csv")
+
+```
+
+
+## Response
+
+Dear Stephanie,
+
+I am more than happy to help you learn about the different housing options available to you here at BYU-Idaho for this upcoming semester! Based on your message, your criteria for housing seems to be something that is cost effective and in a location that is within close proximity to campus and other students.<br>
+
+
+I caution that there are other factors not included in the calculations I present throughout, but these should at least be considered when making your final decision. Factors such as weather—which can affect travel time—or rent being paid by semester instead of monthly should all be taken into account. This way, when you choose an apartment, you can adjust accordingly.<br>
+
+
+With that, I have narrowed down the available housing units and found a few options that meet your desired requirements!
+
+
+
+
+
+<!-- Hint, you should probably subset the Rent dataset to only show the "Approved Women's Housing" since Stephanie won't be interested in Male Housing options. Notice how this text in green doesn't show up in the HTML output because we used the HTML comment tags around this text. --> 
+
+```{r}
+
+Rent_filtered <- Rent %>%
+  mutate(`Walking Minutes to the MC`= round((CrowFlyMetersToMC/1609)*22,0)) %>%
+  select(Gender,Name,Address,`Walking Minutes to the MC`,Residents,AvgFloorPlanCost) %>%
+  mutate(`Monthly Floor Plan Cost`=round(AvgFloorPlanCost/3.5,2))%>%
+  filter(Gender == "F")%>%
+  filter(`Monthly Floor Plan Cost` < 300) %>%
+  filter(Residents > 20) %>%
+  rename(`Semester Floor Plan Cost` = AvgFloorPlanCost) %>%
+  rename(`Apartment Complex`= Name)%>%
+  arrange(`Monthly Floor Plan Cost`) %>%
+  select(`Apartment Complex`,Address,`Walking Minutes to the MC`, Residents, `Monthly Floor Plan Cost`,`Semester Floor Plan Cost`)
+
+
+```
+
+----
+
+## BYU-Idaho Approved Female Housing Options
+
+For your convenience, I filtered out all the Men's housing along with any Female housing that was over your set budget of $300. The options I've compiled include both the monthly rent and the semester rent, allowing you to compare the overall amount you'll be spending in a given semester versus month-to-month.<br>
+
+
+Additionally, I've filtered out any student housings that have less than 20 female residents present as well as included the walking distance in minutes from each apartment complex to BYU-Idaho's Hyrum Manwaring Student Center (MC), which is likely to be a hub for social activities and meeting new people.
+
+```{r}
+# Code to get you started, be sure to use a subset of Rent instead of Rent in this code though.
+
+datatable(Rent_filtered, options=list(lengthMenu =c(3,10,30)), extensions="Responsive")
+
+```
+
+
+----
+
+
+To help you visualize these options, I've created a map of Rexburg that includes all the listed apartment complexes, marked with blue indicators. Each marker shows the complex's name, the monthly rent, and the walking distance from the Manwaring Center, which is highlighted with a light blue marker for reference.
+
+
+```{r message=FALSE, warning=FALSE}
+
+mc_icon <- makeAwesomeIcon(icon= "university",iconColor = "white",markerColor = "lightblue", library = "fa")
+
+leaflet(data = Rent_filtered)%>%
+  addTiles() %>%
+  setView(lng=-111.7833595717528, lat=43.82217013118815,zoom =14.511)%>%
+  addAwesomeMarkers(lng=-111.7827756599601, lat=43.81821783971177,
+                    icon= mc_icon, popup= "Manwarding Center(MC)")%>%
+  addMarkers(lng=-111.7876455, lat= 43.82246794, popup= "PINES, WOMEN<br>Rent: $255.52<br>8 Min. Walk")%>%
+  addMarkers(lng=-111.7882195, lat=43.81930189, popup= "DAVENPORT APARTMENTS<br>Rent: $255.71<br>6 Min. Walk")%>%
+  addMarkers(lng= -111.7754656, lat=43.8174285, popup= "BUENA VISTA<br>Rent: $257.14<br>8 Min. Walk")%>%
+  addMarkers(lng=-111.7805055, lat=43.82015341, popup= "RIVIERA APARTMENTS<br>Rent: $278.57<br>3 Min. Walk")%>%
+  addMarkers(lng=-111.7890135, lat=43.81866711, popup= "BROOKLYN APARTMENTS<br>Rent: $284.29<br>7 Min. Walk")%>%
+  addMarkers(lng=-111.7871091, lat=43.82469723, popup= "COTTONWOOD - WOMEN<br>Rent: $284.29<br>11 Min. Walk")%>%
+  addMarkers(lng=-111.7877153, lat=43.81913933, popup= "ROYAL CREST<br>Rent: $284.29<br>6 Min. Walk")%>%
+  addMarkers(lng=-111.7792019, lat=43.82347422, popup= "BLUE DOOR, WOMEN<br>Rent: $285<br>8 Min. Walk")%>%
+  addLegend(position="topright",
+            colors= c("lightblue","cornflowerblue"),
+            labels = c("Manwarding Center (MC)","Apartment Complexes"),
+            title= "Building Locations")%>%
+  addControl("<strong>Click the marker to see additional information</strong>",position = "topright", className = "map-caption")
+
+
+```
+
+
+----
+
+## Is it within budget?
+
+Understanding the broader context of housing costs can be helpful in making your decision. I've prepared a five-number summary of the cost per month and per semester for BYU-Idaho Female student housing.<br>
+
+
+It's important to note that while your budget is $300 a month, some apartment complexes require payment for the whole semester upfront. With this in mind, since a semester is around 3 months you could be paying somewhere around $890 - $990.<br>
+
+
+This comparison between monthly and semester costs can help you prepare for different payment structures and assess the value of each option.<br>
+
+
+```{r}
+outputTable <- rbind(`Cost Per Month` = favstats(Rent_filtered$`Monthly Floor Plan Cost`), `Cost Per Semester`= favstats(Rent_filtered$`Semester Floor Plan Cost`))
+
+pander(outputTable[c("min","Q1","median","mean","Q3","max")], caption="<strong>BYU-Idaho Female Housing Rent Summary</strong>")
+
+```
+
+<br>
+
+
+
+----
+
+## Is it hospitable?
+
+Since you expressed a preference for a social environment, I've also included a graph showing the housing choices of other female students in relation to the complex's proximity to campus.<br>
+
+
+The color intensity indicates the walking minutes from the apartment complex to the Manwarding Center, with blue shades representing closer options, yellow shades indicating farther ones, and green shades indicating them as the in between. The dot size specifies rent, bigger dots being on the expensive side and the smaller dots on the cheaper side.<br>
+
+
+Hovering over each dot will tell you which apartment it is as well as the rent cost and resident count. This visualization can help you gauge the balance between social activity and cost, as it shows where most female students choose to live and how much they're willing to spend for a socially active apartment. 
+
+```{r message=FALSE, warning=FALSE}
+custom_colorscale<- list(
+  list(0, "blue"),
+  list(0.13,"blue"),
+  list(0.14,"yellow"),
+  list(0.153,"red"))
+
+
+
+plot_ly(
+  Rent_filtered,
+  x= ~`Walking Minutes to the MC`,
+  y= ~Residents,
+  size= ~`Monthly Floor Plan Cost`,
+  color = ~`Walking Minutes to the MC`,
+  colorscale= custom_colorscale,
+  text = ~paste(`Apartment Complex`,"\n","Residents :",Residents,"\n","$",`Monthly Floor Plan Cost`),
+  hoverinfo= 'text')%>%
+  plotly::layout (
+    title = "Popular BYU-Idaho Female Student Housing", 
+    xaxis = list(title = "Walking Minutes to the MC"),
+    yaxis = list(title = "Residents"))
+
+
+```
+
+<br>
+
+
+----
+
+## Conclusion
+
+In summary, it appears that the most populated and campus-proximate apartments tend to be more expensive, while the more affordable options are typically further from campus and less densely populated. Ultimately, your choice of housing will depend on which factor you prioritize more. 
+
+
+----
+
+
+<u>The Cheapest Option:</u> [PINES, THE - WOMEN](pineshousing.com)
+
+- Rent: $255.52
+
+- Residents : 126
+
+- Walk to the MC : 8 Mins. 
+
+
+
+
+<u>The Closest Option:</u> [RIVERA APARTMENTS](WWW.RIVIERA-APTS.COM)
+
+- Rent : $278.57
+
+- Residents : 82
+
+- Walk to the MC : 3 Mins.
+
+
+
+
+<u>The Sociable Option:</u> [ROYAL CREST](WWW.ROYALCRESTAPARTMENTS.COM)
+
+- Rent : $284.29
+
+- Residents : 342
+
+- Walk to the MC : 6 Mins. 
+
+
+
+
+----
+
+
+As a reminder, once you make your decision ensure that you adjust accordingly. Such as, if you pick the farther apartment, maybe you could invest in a bike to compensate for that longer travel time. Overall, this information should help you make an informed decision that aligns with your preferences and budget.
+
+
+[^1]: Note that Stephanie is a fictional character who is based on real experiences of many faculty and staff here at BYU-Idaho.
+
+
+
+

@@ -1,0 +1,572 @@
+---
+title: "<center>Brigham Young University of Idaho Testing Center</center>"
+output:
+  html_document:
+    theme: sandstone
+    code_folding: hide
+      
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(GSODR)
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(sf)
+library(ggspatial)
+library(leaflet.extras)
+library(bslib)
+library(shiny)
+library(broom)
+library(MASS)
+
+testingcenter <- read_csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/Testingcenterscores.csv")
+
+```
+
+---
+
+# Background
+
+<br>
+
+In Fall Semester 2024, a new protocol required 100 level Math students to take their exams in Brigham Young University of Idaho's Testing Center. This change came after faculty suspected cheating during exams, since in the previous semester (Spring 2024) students could take tests in quiet areas like dorm rooms or isolated campus spaces without proctoring. While preventing cheating is a valid reason for requiring Testing Center exams, **is this new requirement severely affecting average test scores?**
+
+<br>
+
+*Click the tabs below to explore the data collection*
+
+# { .tabset .tabset-pills}
+
+## Hide Data 
+
+<br>
+
+---
+
+## Show Data
+
+To investigate how Testing Center exams affect scores, I requested exam data from teachers of 100-level classes during Spring and Fall 2024. The test scores come from classes 100B (Beginning Algebra) and 101 (Intermediate Algebra).
+ 
+To ensure a fair comparison between semesters, I collected scores from the midpoint of both terms. For each exam, I recorded the **teacher** (Baird, Ballou, Oldyroyd, or Ashcraft), **whether it was taken in the Testing Center** (In or Out), and the **student's score**.
+
+```{r}
+datatable(testingcenter, options=list(lengthMenu=c(3,10,30)))
+```
+
+<br>
+
+---
+
+# Analysis
+
+<br>
+
+To analyze the effects of the Testing Center, we will conduct a **Two-Way ANOVA test**. This will show both the overall impact of Testing Center exams and how these changes affected each teacher's students specifically. Below is how the two- way ANOVA test is expressed in a mathematical model: 
+
+
+
+$$\underbrace{Y_{ijk}}_\text{Test Scores} = \mu + \alpha_i + \beta_j + \alpha\beta_{ij} + \epsilon_{ijk} $$
+
+<br>
+
+*Click the tab to see what each part of the equation means*
+
+# { .tabset .tabset-pills}
+
+## Hide Equation Key
+
+<br>
+
+---
+
+## Show Equation Key
+
+<br>
+
+| Part | What does this mean? |
+| --- | --- |
+| $\mu$ <br><br> | The grand mean/ average (which is the average Y-value, aka. test scores, ignoring all information contained in the factors) |
+| $\alpha_i$ <br><br> | The first factor, **Teachers**, with levels being the specific teachers: <br> - **Brother Baird (BB)** <br> - **Sister Ballou (SB)** <br> - **Sister Oldyroyd (O)** <br> - **Sister Ashcraft (A)** |
+| $\beta_i$ <br><br> | The second factor, **Testing Center**, with levels being tests taken: <br> - **IN** the testing center <br> - **OUT** of the testing center |
+| $\alpha\beta_{ij}$ <br><br> | The **interaction of the two factors**, which has **8 levels** <br> - 4 teachers x 2 testing locations = 8 |
+
+
+<br>
+
+---
+
+#
+
+## Structuring our Questions
+
+<br>
+
+
+Based on the mathematical model above, we can formally state our hypotheses about the exam scores. The table below outlines each hypothesis and what it aims to determine.
+
+
+| Hypothesis | What does this mean? |
+| --- | --- |
+| $H_0 : \alpha_{BB} = \alpha_{SB} = \alpha_O = \alpha_A = 0$ <br><br> $H_a : \alpha_i \neq 0 \text{ for at least one i} ∈ \text{{1 = BB, 2 = SB, 3 = O, 4 = A}}$ <br><br> | 1. Does the **math teacher** a student takes effect average test scores? |
+| $H_0 : \beta_{In} = \beta_{Out} = 0$ <br><br> $H_a : \beta_j \neq 0 \text{ for at least one i} ∈ \text{ {1 = In, 2= Out}}$ <br><br> | 2. Does the **use of the testing center** impact **average exam scores**? |
+| $H_0 : \alpha\beta_{ij} = 0 \text{ for all i,j}$ <br><br> $H_a : \alpha\beta_{ij} \neq 0 \text{ at least one i,j}$ <br><br> | 3. Does the **effect of the testing center** vary by **teacher**? (Alternatively, does the teacher influence how students perform in the testing center?) |
+
+
+---
+
+We are also going to use what is called a **level of significance** to compare what are called **probability values** (p-values) to throughout the study in order to see **which factors are significant to our data or not**. Our level of significance will be:
+
+$$ \alpha = 0.05 $$
+<br>
+
+With those parameters in place, we can proceed with our test. 
+
+---
+
+## { .tabset .tabset-fade}
+
+### Two-Way ANOVA Test
+
+<br>
+
+The table below shows the results of the **Two-Way ANOVA** test on the 100 level math class exam scores. 
+
+The only column we care about is the **p.value**, as these will tell us if our factors are significant. If the p-value is colored <span style="color:dodgerblue;">blue (or less than 0.05)</span>, this means that factor is <span style="color:dodgerblue;">significant</span>. If the p-value is colored <span style="color:red;">red (or greater than 0.05)</span>, this means that factor is <span style="color:red;">insignificant</span>.
+
+According to our results, the **specific professor and testing center significantly impact exam scores**, while **there is no evidence that the testing center impacted the effect of each teacher's students differently**. Therefore, it ultimately comes down to the teacher and whether or not the exam was taken in the testing center. 
+
+
+```{r message=FALSE, warning=FALSE}
+TCanova <- aov(`Test Scores` ~ Teacher + `Testing Center` + Teacher:`Testing Center`, data = testingcenter)
+
+tcova <- tidy(TCanova)
+
+tcova %>% 
+  mutate(
+    `p.value` = ifelse(
+      `p.value` < 0.0001, 
+      format(`p.value`, scientific = TRUE, digits = 5),  
+      round(`p.value`, 5)
+    ),
+    `p.value` = cell_spec(
+      `p.value`, "html", 
+      color = ifelse(
+        is.na(`p.value`), 
+        "black", 
+        ifelse(as.numeric(`p.value`) < 0.05, "dodgerblue", "red")
+      )
+    )
+  ) %>%
+  kbl(escape = FALSE, col.names = c("Term", "df", "sumsq", "meansq", "statistic", "p.value")) %>%
+  kable_styling("striped", full_width = TRUE)
+
+```
+
+
+<br>
+
+*The next tab checks the normality of the data and if we can really trust the results of our ANOVA test. *
+
+<br>
+
+---
+
+### Diagnostic Plots
+
+<br>
+
+Before diving deeper into each factor, we must first verify if our **Two-Way ANOVA test** results are reliable by checking whether our collected data meets the ANOVA test requirements.
+
+---
+
+The ***two*** ANOVA test reqirements are as follows: 
+
+1. Constant (Equal) Variance
+
+  - checking that each point is independent from each other
+  
+  - What we want: **random scattering of points**
+
+2. Normal Error Terms (Residuals)
+
+  - checking that the distribution of the data is normal
+  
+  - What we want: **all points following the dashed line**
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+par(mfrow=c(1,2))
+
+plot(TCanova, which=1:2, pch=16)
+```
+
+</center>
+
+<div style="display:flex;justify-content: space-around;">
+<div>
+
+The **magnitude of the vertical variability** of these dots indicates that **the data does not meet the Constant Variance requirement**. This is due to the **inconsistent spread** of each section of dots, particularly the two clusters on the far right having different lengths compared to the others.
+
+</div>
+<div>
+
+Since the **points deviate from the line of normality at both ends**, we can conclude that **the data does not meet the Normal Terms requirement**. Due to our deviation of dots, this indicates that our data is **highly skewed** and not at all close to normal. This deviation likely occurs because of outliers in the lower test scores.
+
+</div>
+</div>
+
+---
+
+While our data **fails to meet both requirements**, this means we should interpret our results with caution as we cannot promise that they are definitive. **We will carefully analyze our ANOVA test results, graphical summaries, and numerical summaries with these limitations in mind**.
+
+
+<br><br>
+
+---
+
+<br>
+
+<center> 
+## How has taking exams in the testing center affected each teacher's students? 
+</center>
+
+
+<br>
+
+As a reminder, this was our p-value for this first factor: 
+
+$$\text{Teacher p-value} = 0.0004095 < \alpha$$
+
+<br>
+
+Since the p-value is **less than** our level of significance, **teachers have a significant effect on student exam scores**. This aligns with teachers' fundamental role in guiding students toward academic success. 
+
+The graph and table below compares scores and averages across professors' classes, regardless of if the student took their exam in the testing center. The data shows that **students in Brother Baird's 100-level classes achieve higher average scores of around 87.96, whether taking exams in the testing center or not**. Sister Ballou's students show the second-highest performance, followed by Sister Ashcraft's and Sister Oldyroyd's students.
+
+*Note: Sister Ashcraft's scores appear as more separated dots because her scores are recorded as whole numbers, unlike her colleagues who use decimal scores. 
+
+<br><br>
+
+*Hover over the dots to see individuals scores as well as the average score between each professor.*
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+testingcenter <- testingcenter %>%
+  mutate(tooltip = paste("Professor:", Teacher, "<br>Exam Score:", `Test Scores`))
+
+testingcenter$Teacher <- factor(testingcenter$Teacher, levels = c("Baird","Ballou","Oldyroyd", "Ashcraft"))
+
+meanie <- testingcenter %>%
+  group_by(Teacher) %>%
+  summarise(Average = mean(`Test Scores`))
+
+meanie <- meanie %>%
+  mutate(tooltip = paste("Professor:", Teacher, "<br><b>Average Exam Score:</b>", round(Average, 2)))
+
+Mathy <- ggplot(testingcenter, aes(x=Teacher, y=`Test Scores`, color= Teacher, text = tooltip)) +
+  geom_point(size = 2) +
+  geom_line(data = meanie, aes(x = Teacher, y = Average, group = 1), 
+            color = "lightcoral", size = 0.5, inherit.aes = FALSE) +
+  geom_point(data = meanie, aes(x = Teacher, y = Average, text=tooltip), 
+             color = "lightcoral", size = 2, inherit.aes = FALSE)   +
+  scale_color_manual(values = c("red1", "red2", "red3", "darkred")) +
+  labs(title="BYU-Idaho Math 100 Professors' Student Exam Performance", x="Professors", y="Exam Scores") + 
+  theme_minimal()
+
+ggplotly(Mathy, tooltip = "text")
+```
+
+
+```{r}
+testingcenter %>%
+  group_by(Teacher) %>%
+  summarise(`Average Test Scores`=mean(`Test Scores`), .groups="drop") %>%
+  pander(caption="Average Test Scores by Teacher")
+```
+
+
+</center>
+
+
+
+
+
+<br>
+
+---
+
+<br>
+
+<center>
+## Does the use of the testing center impact average exam scores?
+</center>
+
+
+<br>
+
+As a reminder, this was our p-value for this second factor:
+
+$$\text{Testing Center p-value} = 2.724e^{-16} < \alpha$$
+
+<br>
+
+The **extremely low p-value** indicates a **significant relationship between testing center exams and student performance**.
+
+The data shows that **average test scores decreased when students took exams in the testing center**. Specifically, there is a **5.38% drop in average scores**, shifting student grades from B+ to B or B- range. While this may seem like a small difference, it can substantially impact a student's overall grade, especially if they are struggling in other areas.
+
+<br><br>
+
+*Hover over the dots to see individual scores and average scores. Additionally click the `Box Plot Style` tab to hover and see the five number summary of each group.*
+
+## { .tabset .tabset-pills}
+
+### Scatter Plot Style
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+testingcenter <- testingcenter %>%
+  mutate(tooltip = paste("Testing Center:", `Testing Center`, "<br>Exam Score:", `Test Scores`))
+
+testingcenter$`Testing Center` <- factor(testingcenter$`Testing Center`, levels = c("Out", "In"))
+
+meanit <- testingcenter %>%
+  group_by(`Testing Center`) %>%
+  summarise(Average = mean(`Test Scores`))
+
+meanit <- meanit %>%
+  mutate(tooltip = paste("Testing Center:", `Testing Center`, "<br><b>Average Exam Score:</b>", round(Average, 2)))
+
+Mathi <- ggplot(testingcenter, aes(x=`Testing Center`, y=`Test Scores`, color = `Testing Center`, text= tooltip)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_line(data = meanit, aes(x = `Testing Center`, y = Average, group = 1), 
+            color = "turquoise", size = 0.5, inherit.aes = FALSE) +
+  geom_point(data = meanit, aes(x = `Testing Center`, y = Average, text=tooltip), 
+             color = "turquoise", size = 2, inherit.aes = FALSE)   +
+  scale_color_manual(values = c("midnightblue", "dodgerblue")) +
+  labs(title="BYU-Idaho Math 100 Student Performance: Testing Center vs. Other Locations", x="Outside or inside the testing center?", y="Exam Scores") +
+  theme_minimal()
+
+ggplotly(Mathi, tooltip = "text")
+```
+
+</center>
+
+
+### Box Plot Style
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+Mathii <- ggplot(testingcenter, aes(x=`Testing Center`, y=`Test Scores`, fill = `Testing Center`)) +
+  geom_boxplot(aes(color = `Testing Center`),alpha =0.5, size = 1) +
+  scale_fill_manual(values = c("midnightblue", "dodgerblue")) +
+  scale_color_manual(values = c("midnightblue","dodgerblue")) +
+    geom_line(data = meanit, aes(x = `Testing Center`, y = Average, group = 1), 
+            color = "turquoise", size = 0.5, inherit.aes = FALSE) +
+  geom_point(data = meanit, aes(x = `Testing Center`, y = Average), 
+             color = "turquoise", size = 2, inherit.aes = FALSE)  +
+  labs(title="BYU-Idaho Math 100 Student Performance: Testing Center vs. Other Locations", x="Outside or inside the testing center?", y="Exam Scores") +
+  theme_minimal()
+
+ggplotly(Mathii)
+```
+
+</center>
+
+##
+
+<center>
+
+```{r}
+testingcenter %>%
+  group_by(`Testing Center`) %>%
+  summarise(`Average Test Scores`=mean(`Test Scores`), .groups="drop") %>%
+  pander(caption="Average Exam Scores by Testing Location")
+```
+
+</center>
+
+<br>
+
+---
+
+<br>
+
+<center>
+## How has taking exams in the testing center affected each teacher's students?
+</center>
+
+<br>
+
+As a reminder, this was our p-value for this third factor:
+
+$$\text{Interaction p-value} = 0.9505 > \alpha$$
+<br>
+
+Since our p-value was **greater than** our level of significance, there is **no significant relationship between specific teachers' students and their performance in the testing center**. This means we found no evidence that any teacher's students perform notably better or worse in the testing center compared to others. This suggests that teaching methods don't significantly influence how students perform in different testing environments.
+
+However, when examining each professor's data separately, we found that **their students who took exams in the testing center performed worse compared to those who took exams elsewhere**. Sister Oldyroyd's and Sister Ashcraft's classes showed modest changes, with averages dropping from B+ to B-, while Brother Bair's and Sister Ballou's classes experienced larger drops with a whole letter change from A- to B. 
+
+Overall, there was approximately a **6.11%** decrease in scores when exams were taken in the testing center. This trend is even more visible in the `Split` tab, where scores outside the testing center cluster toward the higher end, while scores inside the testing center show a broader distribution skewing toward lower scores.
+
+<br>
+
+*Hover over the dots to see individual scores and average scores. Additionally click between the `Combined` and `Split` tabs to further compare and contrast each group.*
+
+## { .tabset .tabset-pills}
+
+### Combined
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+create_graph <- function(data, split = FALSE) {
+  
+  data <- data %>%
+    mutate(
+      text = paste(
+        "Teacher:", Teacher, "<br>",
+        "Testing Center:", `Testing Center`, "<br>",
+        "Exam Score:", `Test Scores`
+      )
+    )
+  
+  
+  mean_data <- data %>%
+    group_by(Teacher, `Testing Center`) %>%
+    summarise(mean_score = mean(`Test Scores`), .groups = "drop") %>%
+    mutate(text = paste(
+      "Teacher:", Teacher, "<br>",
+      "Testing Center:", `Testing Center`, "<br>",
+      "<b>Average Exam Score:</b>", round(mean_score, 2), "<br>"))
+  
+  if (split) {
+    data <- data %>%
+      mutate(x_axis = interaction(Teacher, `Testing Center`))
+    mean_data <- mean_data %>%
+      mutate(x_axis = interaction(Teacher, `Testing Center`))
+    
+     plot <- ggplot(data, aes(x = interaction(Teacher, `Testing Center`), y = `Test Scores`, color = `Testing Center`)) +
+      geom_point(position = position_dodge(width = 0.8)) +
+      stat_summary(fun = "mean", geom = "line", aes(group = `Testing Center`), position = position_dodge(width = 0.8)) +
+      labs(
+        title = "BYU-Idaho 100 Level Math Exam Scores by Testing Location",
+        x = "Professors and Testing Center",
+        y = "Test Scores"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  } else {
+    plot <- ggplot(data, aes(x = Teacher, y = `Test Scores`, group = `Testing Center`, color = `Testing Center`, text = text)) +
+      geom_point(size = 2) +
+      stat_summary(fun = "mean", geom = "line") +
+      geom_point(data = mean_data, aes(x = Teacher, y = mean_score, color = `Testing Center`, text = text), 
+                 inherit.aes = FALSE, size = 3) +
+      labs(
+        title = "BYU- Idaho 100 Level Math Exam Scores",
+        x = "BYU-Idaho Professors",
+        y = "Test Scores"
+      ) +
+      theme_minimal()
+  }
+  
+  ggplotly(plot, tooltip = "text") # Add tooltip for custom text
+}
+
+
+create_graph(testingcenter, split = FALSE)
+```
+
+</center>
+
+### Split
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+create_graph(testingcenter, split = TRUE)
+```
+
+</center>
+
+##
+
+<center>
+
+```{r}
+testingcenter %>%
+  group_by(Teacher,`Testing Center`) %>%
+  summarise(ave=mean(`Test Scores`), .groups="drop") %>%
+  spread(Teacher, ave) %>%
+  pander(caption="Average Exam Scores by Teacher and Testing Location")
+```
+
+</center>
+
+<br>
+
+---
+
+# Conclusion
+
+<br>
+
+With all things considered, ***the testing center does affect student exam performance***, as does the specific professor.
+
+Based on the **6.11% decrease** in average scores, **the primary recommendation is to discontinue the use of the testing center**, as this decline could persist and worsen in future semesters. However, this decrease in average scores could also be interpreted as the testing center scores (85%–82%) might actually represent student performance more accurately than exams taken elsewhere (91%–88%). 
+
+If the testing center remains in use— given that professors significantly influence exam performance —administrators could encourage faculty collaboration on teaching strategies or revise parts of the curriculum to address the performance drop in testing center exams. This raises questions about whether tutoring now has a stronger impact on test scores than before, and whether more students are seeking retakes due to testing center requirements. 
+
+The effectiveness of any implemented changes will depend on how thoughtfully we respond to these challenges. As educators, our job is to educate, but this extends beyond exclusively teaching students. While sharing our work and insights with colleagues and examining our own practices can make us feel vulnerable, we shouldn't shy away from using this feedback. Instead, we should apply these lessons to improve both our students' learning and our own teaching practices to the best of our abilities. 
+
+Finally, it is important to note that **the data collected failed to meet both requirements of the ANOVA test we conducted**, so these findings **must be viewed with caution**. Additional studies would be necessary to statistically validate these results.
+
+
+<br>
+
+---
+
+## Sources
+
+<br>
+
+- Data Collection
+
+  - Thank you to the equally amazing professors from BYU-Idaho, Brother Baird, Sister Ballou, Sister Oldyroyd, and Sister Ashcraft, for assisting me in my data collection. ***My Statistics professor and I commend you for your courage to be vulnerable and the spectacular work they do here at this university!***
+  
+<br>
+  
+- Formatting Inspiration
+
+  - [Another Anaylsis that I did on Beginning Algebra Final Grades](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/Analyses/ANOVA/MyTwoWayANOVA.html)
+  
+<br>
+
+- Chat GPT 
+
+  - For helping me out when I encountered errors or wanted to do something funky outside my skill set
+  

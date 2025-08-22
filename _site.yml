@@ -1,0 +1,107 @@
+name: "statistics-notebook"
+navbar:
+  title: "Statistics Notebook"
+  left:
+    - text: "Paige's Notes"
+      menu:
+        - text: "Intermediate Statistics (MATH 325)"
+          href: "Paige-sNotes.html"
+        - text: "Experimental Design (MATH 326)"
+          href: "326PaigesNotes.html"
+        - text: "Applied Linear Regression (MATH 425)"
+          href: "425PaigesNotes.html"
+
+    - text: "R Help"
+      menu:
+        - text: "R Commands"
+          href: "RCommands.html"
+        - text: "R Markdown Hints"
+          href: "RMarkdownHints.html"
+        - text: "Data Sources"
+          href: "DataSources.html"
+        - text: "Example Analyses"
+          
+
+    - text: "Describing Data"
+      menu:
+        - text: "Graphical Summaries"
+          href: "GraphicalSummaries.html"
+        - text: "Numerical Summaries"
+          href: "NumericalSummaries.html"
+
+    - text: "Making Inference"
+      menu:
+        - text: "Overview"
+          href: "MakingInference.html"
+        - text: "t Tests"
+          href: "tTests.html"
+        - text: "Wilcoxon Tests"
+          href: "WilcoxonTests.html"
+        - text: "Kruskal-Wallis Test"
+          href: "Kruskal.html"
+        - text: "ANOVA"
+          href: "ANOVA.html"
+        - text: "Linear Regression"
+          href: "LinearRegression.html"
+        - text: "Logistic Regression"
+          href: "LogisticRegression.html"
+        - text: "Chi-Squared Tests"
+          href: "ChiSquaredTests.html"
+        - text: "Randomization"
+          href: "PermutationTests.html"
+
+    - text: "Analyses"
+      menu:
+        - text: "325 Analyses"
+          menu:
+            - text: "Good Example Analysis"
+              href: "./325Analyses/StudentHousing.html"
+            - text: "Poor Example Analysis"
+              href: "./325Analyses/StudentHousingPOOR.html"
+            - text: "Rent"
+              href: "./325Analyses/Rent.html"
+            - text: "Stephanie"
+              href: "./325Analyses/Stephanie.html"
+            - text: "High School Seniors (Independent Samples t-Test)"
+              href: "./325Analyses/tTests/HighSchoolSeniors.html"
+            - text: "Recalling Words (Wilcoxon Test)"
+              href: "./325Analyses/WilcoxonTests/RecallingWords.html"
+            - text: "My Two-way ANOVA"
+              href: "./325Analyses/ANOVA/MyTwoWayANOVA.html"
+            - text: "Food (Kruskal-Wallis Test)"
+              href: "./325Analyses/Kruskal-Wallis%20Test/Food.html"
+            - text: "My Simple Linear Regression"
+              href: "./325Analyses/LinearRegression/MySimpleLinearRegression.html"
+            - text: "Weather (Multiple Linear Regression)"
+              href: "./325Analyses/LinearRegression/Weather.html"
+            - text: "My Logistic Regression"
+              href: "./325Analyses/LogisticRegression/MyLogisticRegression.html"
+            - text: "My Chi-squared Test"
+              href: "./325Analyses/ChiSquaredTests/MyChiSquaredTest.html"
+            - text: "Testing Center (Consulting Project)"
+              href: "./325Analyses/TestingCenter.html"
+        - text: "425 Analyses"
+          menu:
+            - text: "Predicting Rexburg, Idaho Weather"
+              href: "./425Analyses/PredictingWeather.html"
+            - text: "Residuals, Sums of Squares, and R-Squared"
+              href: "./425Analyses/ResidualsSumsofSquaresRSquared.html"
+            - text: "Acura TL Selling Prices"
+              href: "./425Analyses/CarSelling.html"
+            - text: "Predicting Grades"
+              href: "./425Analyses/PredictingGrades.html"
+            - text: "House Selling Prices"
+              href: "./425Analyses/HouseSellingPrices.html"
+            - text: "Outlier Theory Assignment"
+              href: "./425Analyses/OutlierTheoryAssignment.html"
+            - text: "Homework Focus"
+              href: "./425Analyses/homeworkfocus.html"
+
+
+output_dir: "docs"
+
+output: 
+  html_document: 
+    theme: united
+    css: styles.css
+    highlight: pygments

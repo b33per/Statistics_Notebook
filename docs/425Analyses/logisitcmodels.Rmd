@@ -1,0 +1,217 @@
+---
+title: "Logistic Thingys"
+output: html_document
+date: "2025-03-23"
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(mosaic)
+```
+
+
+# Question 1
+
+## Graph graph
+
+```{r}
+set.seed(31)
+
+n <- 50
+
+x <- runif(n, 0, 10)
+
+beta0 <- -8.5
+beta1 <- 1.7
+
+p <- exp(beta0 + beta1*x)/(1+exp(beta0 + beta1*x))
+
+y <- rbinom(n, 1, p)
+
+mydat <- data.frame(y, x)
+
+myglm <- glm(y ~ x, data=mydat, family=binomial)
+b <- coef(myglm)
+
+plot(y ~ x, mydat, pch=16, cex=1.2, col=rgb(0,.8,.0,.2))
+curve(exp(beta0 + beta1*x)/(1+exp(beta0 + beta1*x)), lty=2, add=TRUE, col="green")
+curve(exp(b[1] + b[2]*x)/(1+exp(b[1] + b[2]*x)), lty=1, add=TRUE, col="green")
+```
+
+
+# Question 2
+
+## Desmos Graph
+
+![](C:/Users/paige/OneDrive/Pictures/Screenshots 1/Screenshot 2025-03-22 215703.png)
+
+<br>
+
+## Graph Graph
+
+```{r}
+set.seed(458)
+
+n <- 200
+
+x <- runif(n, 0, 10)
+
+beta0 <- 5.5
+beta1 <- -3
+beta2 <- 0.3
+
+p <- exp(beta0 + beta1*x + beta2*x^2)/(1+exp(beta0 + beta1*x + beta2*x^2))
+
+y <- rbinom(n, 1, p)
+
+mydat <- data.frame(y, x)
+
+yourglm <- glm(y ~ x + I(x^2), data=mydat, family=binomial)
+g <- coef(yourglm)
+
+plot(y ~ x, mydat, pch=16, cex=1.2, col=rgb(0,.8,.0,.2))
+curve(exp(beta0 + beta1*x + beta2*x^2)/(1+exp(beta0 + beta1*x + beta2*x^2)), lty=2, add=TRUE, col="green3")
+curve(exp(g[1] + g[2]*x + g[3]*x^2)/(1+exp(g[1] + g[2]*x+ g[3]*x^2)), lty=1, add=TRUE, col="green3")
+```
+
+
+# Graph 3
+
+
+## Desmos Graph
+
+![]()
+
+## Graph Graph
+
+```{r}
+set.seed(2782)
+
+n <- 200
+
+x <- runif(n, 0, 10)
+x2 <- sample(c(0,1), n, replace=TRUE)
+
+beta0 <- 9.5
+beta1 <- -1.3
+
+beta2 <- 0.8
+beta3 <- -3.2
+
+
+p <- exp(beta0 + beta1*x + beta2*x2 + beta3*x*x2)/(1+exp(beta0 + beta1*x + beta2*x2 + beta3*x*x2))
+
+y <- rbinom(n, 1, p)
+
+mydat <- data.frame(y, x)
+
+
+ourglm <- glm(y ~ x + x2 + x:x2, data=mydat, family=binomial)
+b <- coef(ourglm)
+
+b0 <- b[1]
+b1 <- b[2]
+
+b2 <- b[3]
+b3 <- b[4]
+
+
+ggplot(mydat, aes(x=x, y=y, color = as.factor(x2)))+
+  geom_point(alpha=0.5, size = 2) +
+  geom_smooth(method= "glm", method.args = list(family="binomial")) +
+  
+  stat_function(fun=function(x) exp(beta0 + beta1*x)/(1+exp(beta0 + beta1*x)), color = "coral", linetype = "dashed", lwd = 1) +
+  
+  stat_function(fun=function(x) exp(b0 + b1*x)/(1+exp(b0 + b1*x)), color = "coral", linetype = "solid", lwd = 1) +
+  
+  stat_function(fun=function(x) exp((beta0 + beta2) + (beta1 +beta3)*x)/(1+exp((beta0 + beta2) + (beta1 +beta3)*x)), color = "cyan3", linetype = "dashed", lwd = 1) +
+                  
+  stat_function(fun=function(x) exp((b0+b2) + (b1+ b3)*x)/(1+exp((b0 + b2)+ (b1+b3)*x)), color = "cyan3", linetype = "solid", lwd = 1) +
+  coord_cartesian(ylim = c(0,1), xlim = c(0,10))
+
+```
+
+```{r}
+library(tidyverse)
+
+m425 <- read.csv("~/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/Math425PastGrades.csv", stringsAsFactors=TRUE)
+
+m425 <- m425 %>%
+  mutate(f70 = ifelse(FinalExam > 70, 1, 0))
+
+
+
+pairs(m425, panel=panel.smooth, col=rgb(.2,.2,.2,.2))
+
+
+
+glm1 <- glm(f70 ~ Midterm, data=m425, family=binomial)
+summary(glm1)
+AIC(glm1)
+
+glm2 <- glm(f70 ~ Midterm + MagicTwoGroups, data=m425, family=binomial)
+summary(glm2)
+AIC(glm2)
+
+glm3 <- glm(f70 ~ Midterm + MagicTwoGroups + Midterm:MagicTwoGroups, data=m425, family=binomial)
+summary(glm3)
+AIC(glm3)
+
+glm4 <- glm(f70 ~ Midterm + MagicTwoGroups + Midterm:MagicTwoGroups, data=m425, family=binomial)
+summary(glm4)
+
+
+m425$ClassActivitiesCompletedPerfectly
+glm5 <- glm(f70 ~ Midterm*AssessmentQuizzes*MagicTwoGroups*ClassActivitiesCompletedPerfectly, data=m425, family=binomial)
+summary(glm5)
+
+
+
+
+glm5 <- glm(f70 ~ Midterm*MagicTwoGroups + AssessmentQuizzes  + ClassActivitiesCompletedPerfectly, 
+            data=m425, family=binomial)
+summary(glm5)
+
+predict(glm5, data.frame(Midterm=70, AssessmentQuizzes=33, ClassActivitiesCompletedPerfectly="Y",MagicTwoGroups=1),
+        type="response")
+
+summary(m425[,c("Midterm","AssessmentQuizzes","MagicTwoGroups","ClassActivitiesCompletedPerfectly")])
+
+
+library(ResourceSelection)
+
+hoslem.test(glm5$y, glm5$fit, g=10)
+
+plot(f70 ~ Midterm, data=m425)
+b <- coef(glm5)
+b
+
+drawit <- function(Magic=1, AQ=33, CA=1){
+  curve(1/(1+exp(-(b[1] + b[2]*Midterm + b[3]*Magic + b[4]*AQ + b[5]*CA + b[6]*Magic*Midterm))), add=TRUE, xname="Midterm")
+}
+
+drawit(Magic=1, AQ=33, CA=1)
+
+points(70, 0.21, col="green", cex=4, pch=16)
+
+
+
+
+keep <- sample(1:nrow(m425), 90)
+
+mytrain <- m425[keep,]
+mytest <- m425[-keep,]
+
+glm.test <- glm(f70 ~ Midterm*MagicTwoGroups + AssessmentQuizzes  + ClassActivitiesCompletedPerfectly, 
+            data=mytrain, family=binomial)
+
+mypreds <- predict(glm.test, newdata=mytest, type="response")
+
+mydecs <- ifelse(mypreds > 0.5, 1, 0)
+
+cm <- table(mydecs, mytest$f70)
+
+pcc <- (cm[1] + cm[4]) / sum(cm)
+pcc
+```
+

@@ -1,0 +1,131 @@
+---
+title: "425 Midterm Decision"
+output: 
+  html_document:
+    theme: darkly
+    code_folding: hide
+date: "2025-02-25"
+
+---
+
+```{r message=FALSE, warning=FALSE}
+library(GSODR)
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(sf)
+library(ggspatial)
+library(leaflet.extras)
+
+thefallen <- read_csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/Math425PastGrades.csv")
+
+```
+
+
+# Midterm Decision
+
+Drop the Midterm score. 
+
+<br>
+
+# Data
+
+
+```{r}
+thefallen <- thefallen %>%
+  select(MagicTwoGroups, Midterm, FinalExam)
+
+datatable(thefallen, options = list(pageLength = 5)) %>%
+  formatStyle(columns = names(thefallen),color= "white") %>%
+  htmltools::tagList(tags$style(HTML("thead th {color: red !important; font-weight: bold !important; }")))
+```
+
+<br>
+
+# Two Lines Model
+
+```{r}
+thewarriorsbeforeme <- lm(FinalExam ~ Midterm + as.factor(MagicTwoGroups) + Midterm:as.factor(MagicTwoGroups), data = thefallen)
+
+summary(thewarriorsbeforeme) %>%
+  pander()
+```
+
+<br>
+
+$$\underbrace{Y_i}_\text{Final Exam} = \overbrace{\beta_0}^\text{y - int} + \overbrace{\beta_1}^\text{slope}\underbrace{X_{1i}}_\text{Midterm} + \overbrace{\beta_2}^\text{change in y-int}\underbrace{X_{2i}}_\text{MagicTwoGroups} + \overbrace{\beta_3}^\text{change in slope}\underbrace{X_{1i}X_{2i}}_\text{Midterm:MagicTwoGroups} + \epsilon_i$$
+
+<br>
+
+$$Y_i = 9.125 + 0.1297X_i + 13.95X_{2i} -0.05078X_{1i}X_{2i} + \epsilon_i$$
+
+
+
+# Graph
+
+* Hot pink point is my midterm score (yikes i know)
+
+
+```{r message=FALSE, warning=FALSE}
+
+prediction <- data.frame(
+  Midterm=24,
+  FinalExam= 37,
+  label = "Prediction Final Exam Score (Group 2): 37"
+)
+
+predi.p <- predict(thewarriorsbeforeme, data.frame(Midterm=24, MagicTwoGroups = "2"), interval= "prediction")
+
+b <- coef(thewarriorsbeforeme)
+
+thefallen$MagicTwoGroups <- as.factor(thefallen$MagicTwoGroups)
+
+warriors.plot <- ggplot(thefallen, aes(y = FinalExam, x = Midterm, color = MagicTwoGroups)) +
+  geom_point(aes(
+    text = paste(
+      "Group:", MagicTwoGroups, "<br>",
+      "Midterm Score:", Midterm, "<br>",
+      "Final Exam Score:", FinalExam
+    )
+  ), size = 1) + 
+  stat_function(fun = function(x) b[1] + b[2]*x, color = "red") +
+  stat_function(fun = function(x) (b[1] + b[3]) + (b[2] + b[4])*x, color = "darkred") +
+  scale_color_manual(name = "MagicTwoGroups", 
+                     values = c("red", "darkred")) +
+  labs(title = "Test Performances of MATH 425 BYU-Idaho Students",
+       x = "Midterm Score",
+       y="Final Exam Score" ) +
+  geom_segment(aes(x=24, xend=24, y=predi.p[2], yend=predi.p[3]), alpha = 0.1, color= "pink", lwd = 3) +
+  geom_point(data=prediction,
+             aes(x=Midterm, y=FinalExam),
+             size = 3,
+             color= "hotpink")+
+  theme_classic()
+
+ggplotly(warriors.plot, tooltip="text")
+```
+
+<br>
+
+ 
+

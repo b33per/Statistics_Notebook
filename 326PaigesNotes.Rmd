@@ -1,0 +1,187 @@
+---
+title: "Experimental Design Notes"
+subtitle: "(MATH 326)"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 5
+    code_folding: hide
+    css: "styles.css"
+---
+<script type="text/javascript">
+ function showhide(id) {
+    var e = document.getElementById(id);
+    e.style.display = (e.style.display == 'block') ? 'none' : 'block';
+ }
+ 
+ function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
+ 
+</script>
+
+
+***
+
+### Cheat Sheets
+
+* [R Colors](http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf)
+
+* [RStudio Cheat Sheets](https://www.rstudio.com/resources/cheatsheets/)
+
+* [R Base Commands Cheat Sheet](https://iqss.github.io/dss-workshops/R/Rintro/base-r-cheat-sheet.pdf)
+
+* [Keyboard Shortcuts](https://support.rstudio.com/hc/en-us/articles/200711853-Keyboard-Shortcuts)
+
+***
+
+
+
+### Don't forget to always load your libraries and to Knit often!!
+
+```{r, message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(haven)
+
+```
+
+***
+
+
+
+This is the templet for the Hover Box Thingy
+
+<a href="javascript:showhide('SampleHover')">
+<div class="hoverchunk">
+<span class="tooltipr">
+Hover over words box!
+  <span class="tooltiprtext">
+  [insert description here]
+  </span></span><span class="tooltipr">
+&nbsp;&nbsp;&nbsp;&nbsp;  
+</span><span class="tooltipr" style="float:right;">
+&nbsp;...&nbsp; 
+  <span class="tooltiprtext">Click to View Output.</span>
+</span>
+</div>
+</a>
+<div id="SampleHover" style="display:none;">
+
+There are three parts to the help box: 
+
+(1) <u>The starter code</u>
+
+< a href="javascript:showhide('[**Insert classifying name**]')">
+< div class="hoverchunk" >
+
+
+<br>
+
+(2) <u>The description code</u>
+- This is the pattern of the reoccurring code that you need to look out for when writing in the help box descriptions! 
+
+< span class="tooltipr" >
+[**What shows up in the box**]
+  < span class="tooltiprtext" >
+  [**The description that shows up when you hover**]
+  < /span>< /span >
+  
+<br>
+
+(3) <u>The ending code</u>
+- the r chunk you put right after will then show up after you click the help box!
+
+& nbsp;& nbsp;& nbsp;& nbsp;  
+< span class="tooltiprtext" >Press Enter to run the code. </span >
+< /span><span class="tooltipr" style="float:right;" >
+& nbsp;...& nbsp; 
+  < span class="tooltiprtext" >Click to View Output.< /span >
+< /span >
+< /div >
+< /a >
+< div id="[**The classifying name that you put in the starter code!**]" style="display:none;" >
+
+*When using, make sure you fix all the spaces when using and use "< /div >" to show where the drop down is meant to end! 
+
+<br>
+
+
+</div>
+
+<br>
+
+***
+
+
+# Personal Notes
+
+<br>
+
+<center>
+
+OoOoooOOOoo let's go assignments!!
+</div>
+
+
+<br>
+
+***
+
+## Weekly Assignments
+
+<br>
+
+The sections below show the different Skill Quizzes and Class Activities done throughout the semester. 
+As well as some personal notes on those assignments!
+</div>
+ 
+
+<br>
+
+***
+
+### Week 1 | Welcome to the Course & Introduction to RStudio
+
+<br>
+
+
+We were setting up RStudio and doing cool little graphic thingys! 
+
+<br>
+
+***
+
+#### Skill Quiz - Introduction to R 

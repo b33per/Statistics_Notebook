@@ -1,0 +1,240 @@
+---
+title: "<center> Does Your View on Disciplining Children Make You a Potential Murderer? </center>"
+output: 
+  html_document:
+    theme: simplex
+    code_folding: hide
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(haven)
+
+```
+
+<!-- Directions
+
+Come up with a chi squared test analysis of your own creation. 
+
+* Write the Background and clearly state your question. Then collect data and perform the chi-squared test analysis in order to answer your question. Use the proper order of first, ask the question, then second, figure out the answer.
+
+* You can use data from 
+    - An R data set
+    - the internet (like weather data, Facebook data, or sports data) 
+    - your own experiment 
+    - your own observational study
+* However,     
+    - Do not violate the "Human Subjects Rules" of the university: http://www.byui.edu/executive-strategy-and-planning/institutional-research/research-and-assessments/research-and-surveys
+
+* You need a sample size large enough to meet the requirements of the chi squared test. Unfortunately, the sample size is completely dependent on the situation you select. A good rule of thumb is 10 observations per "combination-group" in your data.
+
+-->
+
+
+## Background
+
+<br>
+
+The [GSS Data Explorer Page](https://gssdataexplorer.norc.org/variables/vfilter) is a publicly available national source displaying the surveyed results of American Society[^1]. Within this data, I was interested in the `SPANKING` and `POLMURDR` columns. The `SPANKING` column questioned individuals if they favored spanking to discipline their child, the options being : Strongly Agree (1), Agree (2), Disagree (3), Strongly Disagree (4). The `POLMURDR` column questioned individuals if they have ever been questioned as a potential murder suspect, their options being: Yes(1) or No(2). 
+
+In this study, we will be using the previous columns provided by GSS Data Explorer to answer the question: ***Does your views on disciplining children make you a potential murderer?***
+
+To determine this, we will be using a **Chi-Squared Test** to determine if the preference to discipline your child is *associated or not associated* with being suspected as a potential murder. The data for this study is shown below:
+
+
+```{r message=FALSE, warning=FALSE}
+gss2021 <- read_csv("C:/Users/paige/OneDrive/Documents/Fall Semester 2024/MATH 325/Statistics-Notebook-master/Data/gss2021.csv")
+
+childmurdr <- table(gss2021$SPANKING,gss2021$POLMURDR)
+
+rownames(childmurdr) <- c("Strongly Agree", "Agree", "Disagree", "Strongly Disagree") #these replace the 1, 2, and 3
+
+colnames(childmurdr) <- c("Yes", "No") #these replace the 1 and 2
+
+chillM <- gss2021 %>%
+  select(SPANKING, POLMURDR)
+
+datatable(chillM, options = list(c(3,10,30)))
+```
+
+
+
+<br>
+
+---
+
+## Hypothesis
+
+<br>
+
+Aligned with our question, our null and alternative hypotheses will be stated in the following way:
+
+$$H_0 : \text{A person's views on spanking as discipline and their status as a murder suspect are independent.} $$
+$$H_a : \text{A person's views on spanking as discipline and their status as a murder suspect are associated (not independent.} $$
+<br>
+
+Additionally, we will be using this level of significance:
+
+$$\alpha = 0.05$$
+
+<br>
+
+---
+
+## Analysis
+
+<br>
+
+To discover the answer to our question, we will now look through graphics, tables, and conduct a chi-squared test.
+
+<br>
+
+---
+
+### Graphics
+
+To better visualize our table, we will be using a bar plot. The bar plot at a glance shows that there are significantly more non-murder suspects across all disciplinary views. However, among murder suspects, there was a higher proportion who agreed or strongly agreed with spanking compared to non-suspects with similar views. We will examine these patterns further through chi-squared testing. 
+
+<center>
+
+```{r}
+barplot(childmurdr, beside = TRUE, legend.text= TRUE, args.legend = list(title="Should we discipline our children?", x="topright", cex=0.6, bty='n'), col = c("blue", "lightblue", "pink", "red"), xlim= c(0, 18), xlab="Have you been suspected of murder?", main = "Discplining Parents to Potential Murders of 2021")
+```
+
+```{r}
+childmurdr %>%
+  pander(caption = "2021 Potential Murderers", split.table=Inf)
+```
+
+
+</center>
+
+<br>
+
+---
+
+### $\chi^2$ Test
+
+<br>
+
+Below are the results of our $X^2$ test.
+
+```{r}
+chi.murdr <- chisq.test(childmurdr)
+
+pander(chi.murdr)
+```
+
+Based on the p-value of $3.37e^{-6}$, we can **reject** our null hypothesis and conclude that a person's views on spanking as discipline and their status as a murder suspect are **associated (not independent)**. This can be represented by the following: 
+
+$$\text{P-value} = 3.37 e^{-6} < \alpha$$
+
+<br>
+
+---
+
+### $\chi^2$ Requirements
+
+<br>
+
+In order to confirm our findings, we will take a look the requirements by analyzing the **Expected Counts** and the **Residuals**. 
+
+<br>
+
+There are two things to check when we look at our counts: 
+
+1. All expected counts must be **greater than 5**
+
+2. **How far the the residuals** happen when comparing the expected and observed counts
+
+<br>
+
+*Click the tabs below to see our results*
+
+### { .tabset .tabset-pills}
+
+#### Hide Requirements
+
+#### Expected Counts
+
+<br>
+
+As we can see below, **all expected counts are greater than 5**, thus our requirements for this data is met. 
+
+```{r}
+pander(chi.murdr$expected)
+```
+
+<br>
+
+---
+  
+#### Residuals
+
+<br>
+
+The residuals show how much our observed counts deviated from the expected counts under our null hypothesis. The largest difference between observed and expected values occurred where **individuals strongly agreed with disciplining their child and were suspected murderers**, with a residual difference of **2.828**. This relatively small difference suggests limited variability between groups. 
+
+```{r}
+pander(chi.murdr$residuals)
+```
+
+<br>
+
+---
+
+## Interpretation 
+
+<br>
+
+Based on our low p-value of $3.37e^{-6}$, we conclude that **there is an association between a person's view on spanking and their status as a murder suspect**. 
+
+The largest raw residual appeared among individuals who **strongly agreed with spanking and were suspected murderers**, showing a deviation of about **2.83** cases above expectation.
+
+When expressed as percentage differences between observed and expected counts:
+
+- Strongly Agree murder suspects were about +35% higher than expected.
+
+- Agree murder suspects were roughly +20% higher than expected.
+
+Conversely, those who **disagreed or strongly disagreed tended to be underrepresented** among murder suspects, with deviations ranging **between -10% and -25%** compared to what independence would predict.
+
+This percentage framing emphasizes that the observed association is not just statistically significant but also practically meaningful, as particular disciplinary views appear disproportionately among those suspected of murder.
+
+
+These findings suggest that investigators might consider a suspect's disciplinary attitudes during their investigation process, particularly when determining which individuals warrant more thorough questioning.  
+
+<br>
+
+---
+
+### Sources
+
+[^1]:[About GSS Data Explorer Page](https://gssdataexplorer.norc.org/about)
+
+- Formatting Inspiration 
+
+  - [Decade of Movies Chi-Squared Test Example Analysis](file:///C:/Users/paige/OneDrive/Documents/Fall%20Semester%202024/MATH%20325/Statistics-Notebook-master/Analyses/Chi%20Squared%20Tests/Examples/movies.html)
+

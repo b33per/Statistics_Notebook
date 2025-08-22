@@ -1,0 +1,153 @@
+---
+title: "Weather Analysis Lesson"
+output: 
+  html_document:
+    theme: united
+    code_folding: hide
+    
+---
+
+# Analysis Goal
+
+Now write up an analysis that studies something like **how well the MIN temperature predicts the MAX temperature** of the day in the two cities you selected. Of course, you are welcome to do any multiple regression you want with the data, but the recommendation would be to just run a "two-lines" model with the **x=MIN, y=MAX, and color of the dots the NAME column**. 
+
+# Getting the Data
+
+## 1) Install GSODR
+
+- Open the `Weather.Rmd` file in your Statistics Notebook in the `Linear Regression` folder and then make sure you are able to do the following: 
+
+
+`install.packages("GSODR")`
+
+`library(GSODR)`
+
+`load(system.file("extdata", "isd_history.rda", package = "GSODR"))`
+
+`View(isd_history)`
+
+```{r message=FALSE, warning=FALSE}
+# install.packages("GSODR")
+
+library(GSODR)
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(car)
+library(DT)
+
+
+#run: install.packages("GSODR") 
+# to get the GSODR package. You'll need this package to pull in your weather data.
+load(system.file("extdata", "isd_history.rda", package = "GSODR"))
+
+#Run this in your console to see the Country Names you can pick from:
+View(isd_history)
+
+
+#GOAL: select the STNID (station ID) for two different weather stations. 
+#For example, Rexburg is STNID == "726818-94194"
+#Once you have two STNID values selected, go to the next R-chunk.
+
+#To see what columns mean, go here: https://cran.r-project.org/web/packages/GSODR/vignettes/GSODR.html#appendices
+
+```
+
+<br>
+
+---
+
+
+## 2) Picking two cities
+
+#### PART A) View isd_history
+
+- Look and choose two cities in the `isd_history` data set. Then run a similar code to get your station information for your weather stations.
+  - Note: You might have to change the for your cities if one of them doesn't have data available that year!
+
+<br>
+
+##### FORMAT:
+
+`city1 <- get_GSOD(years = 2023, station = "STNID #")`
+
+`city2 <- get_GSOD(years = 2023, station = "STNID #")`
+
+```{r}
+### EXAMPLE:
+REXBURG <- get_GSOD(years = 2021, station = "726818-94194")
+
+SALTLAKE <- get_GSOD(years = 2021, station = "725720-24127")
+
+```
+
+<br>
+
+#### PART B) Two into one!
+
+- Finally, join your two datasets together into one dataset:
+
+##### FORMAT:
+
+`weather <- rbind(city1,city2)`
+
+```{r}
+### EXAMPLE:
+weather2 <- rbind(REXBURG, SALTLAKE)
+```
+
+<br>
+
+#### PART C) Choosing Variables
+
+- Choose **TWO quantitative variables** (for y and x1) and the **city names** to be your **ONE categorical variable** (for x2)
+
+<br>
+
+##### FORMAT
+
+`weather2 <- weather %>%`
+  `select(c(NAME, MAX, MIN)`
+
+
+```{r}
+weather3 <- weather2 %>%
+  select(c(NAME, MAX, MIN))
+
+datatable(weather3, options(list=c(3,10,30)))
+```
+
+
+---
+
+
+<br>
+
+## 3) lm model
+
+- Using the variables we've choose, we can set up our model/lm
+  - Note: When looking at our lm, whichever city is first alphabetically dictiates which line is x2 = 0 and x2=1
+    - Rexburg : x2 = 0 
+    - Salt Lake City : x2 = 1
+
+<br>
+
+### FORMAT: 
+
+$$\underbrace{Y_i}_\text{MAX} = \beta_0 + \beta_1 \underbrace{X_{i1}}_\text{MIN} + \beta_2 \underbrace{X_{i2}}_\text{NAME (City)} + \beta_3 \underbrace{X_{i1}X_{i2}}_\text{Interaction between MIN:NAME(City)} + \epsilon_i \text{where} ~ N(0, \sigma^2)$$
+
+$$X_{2i} = \left\{\begin{array}{ll} 0, & \text{REXBURG} \\ 1, & \text{SALT LAKE CITY} \end{array}\right.$$
+
+<br>
+
+`weather.lm <- lm(MAX ~ MIN + as.factor(NAME) + MIN:as.factor(NAME), data = weather2)`
+
+```{r}
+### EXAMPLE: 
+
+rexlake.lm <- lm(MAX ~ MIN + as.factor(NAME) + MIN:as.factor(NAME), data = weather3)
+
+summary(rexlake.lm) %>%
+  pander()
+```
+

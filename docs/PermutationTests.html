@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Permutation Tests</title>
+
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/united.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<link rel="stylesheet" href="styles.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Statistics Notebook</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Paige's Notes
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="Paige-sNotes.html">Intermediate Statistics (MATH 325)</a>
+    </li>
+    <li>
+      <a href="326PaigesNotes.html">Experimental Design (MATH 326)</a>
+    </li>
+    <li>
+      <a href="425PaigesNotes.html">Applied Linear Regression (MATH 425)</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    R Help
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="RCommands.html">R Commands</a>
+    </li>
+    <li>
+      <a href="RMarkdownHints.html">R Markdown Hints</a>
+    </li>
+    <li>
+      <a href="DataSources.html">Data Sources</a>
+    </li>
+    <li class="dropdown-header">Example Analyses</li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Describing Data
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="GraphicalSummaries.html">Graphical Summaries</a>
+    </li>
+    <li>
+      <a href="NumericalSummaries.html">Numerical Summaries</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Making Inference
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="MakingInference.html">Overview</a>
+    </li>
+    <li>
+      <a href="tTests.html">t Tests</a>
+    </li>
+    <li>
+      <a href="WilcoxonTests.html">Wilcoxon Tests</a>
+    </li>
+    <li>
+      <a href="Kruskal.html">Kruskal-Wallis Test</a>
+    </li>
+    <li>
+      <a href="ANOVA.html">ANOVA</a>
+    </li>
+    <li>
+      <a href="LinearRegression.html">Linear Regression</a>
+    </li>
+    <li>
+      <a href="LogisticRegression.html">Logistic Regression</a>
+    </li>
+    <li>
+      <a href="ChiSquaredTests.html">Chi-Squared Tests</a>
+    </li>
+    <li>
+      <a href="PermutationTests.html">Randomization</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Analyses
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">325 Analyses</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="./325Analyses/StudentHousing.html">Good Example Analysis</a>
+        </li>
+        <li>
+          <a href="./325Analyses/StudentHousingPOOR.html">Poor Example Analysis</a>
+        </li>
+        <li>
+          <a href="./325Analyses/Rent.html">Rent</a>
+        </li>
+        <li>
+          <a href="./325Analyses/Stephanie.html">Stephanie</a>
+        </li>
+        <li>
+          <a href="./325Analyses/tTests/HighSchoolSeniors.html">High School Seniors (Independent Samples t-Test)</a>
+        </li>
+        <li>
+          <a href="./325Analyses/WilcoxonTests/RecallingWords.html">Recalling Words (Wilcoxon Test)</a>
+        </li>
+        <li>
+          <a href="./325Analyses/ANOVA/MyTwoWayANOVA.html">My Two-way ANOVA</a>
+        </li>
+        <li>
+          <a href="./325Analyses/Kruskal-Wallis%20Test/Food.html">Food (Kruskal-Wallis Test)</a>
+        </li>
+        <li>
+          <a href="./325Analyses/LinearRegression/MySimpleLinearRegression.html">My Simple Linear Regression</a>
+        </li>
+        <li>
+          <a href="./325Analyses/LinearRegression/Weather.html">Weather (Multiple Linear Regression)</a>
+        </li>
+        <li>
+          <a href="./325Analyses/LogisticRegression/MyLogisticRegression.html">My Logistic Regression</a>
+        </li>
+        <li>
+          <a href="./325Analyses/ChiSquaredTests/MyChiSquaredTest.html">My Chi-squared Test</a>
+        </li>
+        <li>
+          <a href="./325Analyses/TestingCenter.html">Testing Center (Consulting Project)</a>
+        </li>
+      </ul>
+    </li>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">425 Analyses</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="./425Analyses/PredictingWeather.html">Predicting Rexburg, Idaho Weather</a>
+        </li>
+        <li>
+          <a href="./425Analyses/ResidualsSumsofSquaresRSquared.html">Residuals, Sums of Squares, and R-Squared</a>
+        </li>
+        <li>
+          <a href="./425Analyses/CarSelling.html">Acura TL Selling Prices</a>
+        </li>
+        <li>
+          <a href="./425Analyses/PredictingGrades.html">Predicting Grades</a>
+        </li>
+        <li>
+          <a href="./425Analyses/HouseSellingPrices.html">House Selling Prices</a>
+        </li>
+        <li>
+          <a href="./425Analyses/OutlierTheoryAssignment.html">Outlier Theory Assignment</a>
+        </li>
+        <li>
+          <a href="./425Analyses/homeworkfocus.html">Homework Focus</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Permutation Tests</h1>
+
+</div>
+
+
+<script type="text/javascript">
+ function showhide(id) {
+    var e = document.getElementById(id);
+    e.style.display = (e.style.display == 'block') ? 'none' : 'block';
+ }
+</script>
+<hr />
+<p>A nonparametric approach to computing the p-value for any test
+statistic in just about any scenario.</p>
+<hr />
+<div id="section"
+class="section level3 tabset tabset-pills tabset-fade">
+<h3 class="tabset tabset-pills tabset-fade"></h3>
+<div id="overview" class="section level4">
+<h4>Overview</h4>
+<div style="padding-left:30px;">
+<p>In almost all hypothesis testing scenarios, the null hypothesis can
+be interpreted as follows.</p>
+<div style="padding-left:15px;padding-right:15px;">
+<p><span class="math inline">\(H_0\)</span>: Any pattern that has been
+witnessed in the sampled data is simply due to random chance.</p>
+</div>
+<p>Permutation Tests depend completely on this single idea. If all
+patterns in the data really are simply due to random chance, then the
+null hypothesis is true. Further, random <strong>re</strong>-samples of
+the data should show similar lack of patterns. However, if the pattern
+in the data is <em>real</em>, then random <strong>re</strong>-samples of
+the data will show very different patterns from the original.</p>
+<p>Consider the following image. In that image, the toy blocks on the
+left show a clear pattern or structure. They are nicely organized into
+colored piles. This suggests a <em>real</em> pattern that is not random.
+Someone certainly organized those blocks into that pattern. The blocks
+didn’t land that way by random chance. On the other hand, the pile of
+toy blocks shown on the right is certainly a random pattern. This is a
+pattern that would result if the toy blocks were put into a bag, shaken
+up, and dumped out. This is the idea of the permutation test. If there
+is structure in the data, then “mixing up the data and dumping it out
+again” will show very different patterns from the original. However, if
+the data was just random to begin with, then we would see a similar
+pattern by “mixing up the data and dumping it out again.”</p>
+<center>
+<img src="Images/legoPermutationExample.png" width=600px;>
+</center>
+<p>The process of a permutation test is:</p>
+<ol style="list-style-type: decimal">
+<li>Compute a test statistic for the original data.</li>
+<li>Re-sample the data (“shake it up and dump it out”) thousands of
+times, computing a new test statistic each time, to create a sampling
+distribution of the test statistic.</li>
+<li>Compute the p-value of the permutation test as the percentage of
+test statistics that are as extreme or more extreme than the one
+originally observed.</li>
+</ol>
+<p>In review, the sampling distribution is created by permuting
+(randomly rearranging) the data thousands of times and calculating a
+test statistic on each permuted version of the data. A histogram of the
+test statistics then provides the sampling distribution of the test
+statistic needed to compute the p-value of the original test
+statistic.</p>
+</div>
+<hr />
+</div>
+<div id="r-instructions" class="section level4">
+<h4>R Instructions</h4>
+<div style="padding-left:50px;">
+<p>Any permutation test can be performed in R with a <code>for</code>
+loop.</p>
+<div style="padding-left:80px;">
+<a href="javascript:showhide('perm1')">
+<div class="hoverchunk">
+<p><span class="tooltipr"> #Step 1 <span class="tooltiprtext">Compute a
+test statistic for the original data.</span> </span><br/><span
+class="tooltipr"> myTest &lt;- …perform the initial test… <span
+class="tooltiprtext">This could be a <code>t.test</code>,
+<code>wilcox.test</code>, <code>aov</code>, <code>kruskal.test</code>,
+<code>lm</code>, <code>glm</code>, <code>chisq.test</code>, or any other
+R code that results in a test statistic. It could even simply be the
+mean or standard deviation of the data.</span> </span><br/><span
+class="tooltipr"> observedTestStat &lt;- …get the test statistic… <span
+class="tooltiprtext">Save the test statistic of your test into the
+object called <code>observedTestStat</code>. For tests that always
+result in a single test statistic like a <code>t.test</code>,
+<code>wilcox.test</code>, <code>kruskal.test</code>, and
+<code>chisq.test</code> it is <code>myTest$statistic</code>. For an
+<code>aov</code>, <code>lm</code>, or <code>glm</code> try printing
+<code>summary(myTest)[]</code> to see what values you are interested in
+using.</span> </span><br/><span class="tooltipr"> observedTestStat <span
+class="tooltiprtext">Print the value of the test statistic of your test
+to the screen. This is the value that we now need to use to compute the
+P-value from by finding the probability that a randomly computed test
+statistic would be “more extreme” than this originally observed
+value.</span> </span><br/><br/><span class="tooltipr"> #Step 2 <span
+class="tooltiprtext">Re-sample the data (“shake it up and dump it out”)
+thousands of times, computing a new test statistic each time, to create
+a sampling distribution of the test statistic.</span> </span><br/><span
+class="tooltipr"> N &lt;- 2000       <span class="tooltiprtext">N is the
+number of times you will reuse the data to create the sampling
+distribution of the test statistic. A typical choice is 2000, but
+sometimes 10000, or 100000 reuses are needed before useful answers can
+be obtained.</span> </span><br/><span class="tooltipr">
+permutedTestStats &lt;-  <span class="tooltiprtext">This is a storage
+container that will be used to store the test statistics from each of
+the thousands of reuses of the data.</span> </span><span
+class="tooltipr"> rep(NA, N) <span class="tooltiprtext">The rep()
+function repeats a given value N times. This particular statement
+repeats NA’s or “missing values” N times. This gives us N “empty”
+storage spots inside of <code>permutedTestStats</code> that we can use
+to store the N test statistics from the N reuses of the data we will
+make in our <code>for</code> loop.</span> </span><br/><span
+class="tooltipr"> for <span class="tooltiprtext">The <code>for</code>
+loop is a programming tool that lets us tell R to run a certain code
+over and over again for a certain number of times.</span> </span><span
+class="tooltipr">  (i in   <span class="tooltiprtext">In R, the
+<code>for</code> loop must be followed by a space, then an opening
+parenthesis, then a variable name (in this case the variable is called
+“i”), then the word “in” then a list of values.</span> </span><span
+class="tooltipr"> 1:N <span class="tooltiprtext">The 1:N gives R the
+list of values 1, 2, 3, … and so on all the way up to N. These values
+are passed into <code>i</code> one at a time and the code inside the
+<code>for</code> loop is performed first for <code>i=1</code>, then
+again for <code>i=2</code>, then again for <code>i=3</code> and so on
+until finally <code>i=N</code>. At that point, the <code>for</code> loop
+ends.</span> </span><span class="tooltipr"> ) <span
+class="tooltiprtext">Required closing parenthesis on the
+<code>for (i in 1:N)</code> statement.</span> </span><span
+class="tooltipr"> { <span class="tooltiprtext">This bracket opens the
+code section of the <code>for</code> loop. Any code placed between the
+opening { and closing } brackets will be performed over and over again
+for each value of <code>i=1</code>, <code>i=2</code>, … up through
+<code>i=N</code>.</span> </span><br/><span class="tooltipr">    <span
+class="tooltiprtext">Two spaces in front of every line inside of the
+opening { and closing } brackets helps keep your code organized.</span>
+</span><span class="tooltipr"> permutedTest &lt;- …perform test with
+permutedData… <span class="tooltiprtext">The same test that was
+performed on the original data, should be performed again but with
+randomly permuted data. The easiest way to permute data is with
+sample(y-variable-name) inside your test. See the Explanation tab for
+details.</span> </span><br/><span class="tooltipr">    <span
+class="tooltiprtext">Two spaces in front of every line inside of the
+opening { and closing } brackets helps keep your code organized.</span>
+</span><span class="tooltipr"> permutedTestStats <span
+class="tooltiprtext">This is the storage container that was built prior
+to the <code>for (i in 1:N)</code> code. Inside the <code>for</code>
+loop, this container is filled value by value using the square brackets
+<code>[i]</code>.</span> </span><span class="tooltipr"> [i] <span
+class="tooltiprtext">The square brackets <code>[i]</code> allows us to
+access the “i”th position of <code>permutedTestStats</code>. Remember,
+since this code is inside of the <code>for</code> loop, <code>i=1</code>
+the first time through the code, then <code>i=2</code> the second time
+through the code, <code>i=3</code> the third time through, and so on up
+until <code>i=N</code> the <code>N</code>th time through the
+code.</span> </span><span class="tooltipr">  &lt;- …get test statistic…
+<span class="tooltiprtext">The test statistic from
+<code>permutedTest</code> is accessed here and stored into
+<code>permutedTestStats[i]</code>.</span> </span><br/><span
+class="tooltipr"> } <span class="tooltiprtext">The closing } bracket
+ends the code that is repeated over and over again inside the
+<code>for</code> loop.</span> </span><br/><span class="tooltipr">
+hist(permutedTestStats) <span class="tooltiprtext">Creating a histogram
+of the sampling distribution of the test statistics obtained from the
+reused and permuted data allows us to visually compare the
+<code>observedTestStat</code> to the distribution of test statistics to
+visually see the percentage of test statistics that are as extreme or
+more extreme than the observed test statistic value. This is the
+p-value.</span> </span><br/><span class="tooltipr">
+abline(v=observedTestStat) <span class="tooltiprtext">This adds the
+<code>observedTestStat</code> to the distribution of test statistics to
+visually see the percentage of test statistics that are as extreme or
+more extreme than the observed test statistic value. This is the
+p-value.</span> </span><br/><br/><span class="tooltipr"> #Step 3 <span
+class="tooltiprtext">Compute the p-value of the permutation test as the
+percentage of test statistics that are as extreme or more extreme than
+the one originally observed.</span> </span><br/><span class="tooltipr">
+sum(permutedTestStats &gt;= observedTestStat)/N <span
+class="tooltiprtext">This computes a “greater than” p-value. A two-sided
+p-value could be obtained by multiplying this value by 2 if the observed
+test statistic was on the right hand side of the histogram.</span>
+</span><br/><span class="tooltipr"> sum(permutedTestStats &lt;=
+observedTestStat)/N <span class="tooltiprtext">This computes a “less
+than” p-value. A two-sided p-value could be obtained by multiplying this
+value by 2 if the observed test statistic was on the left hand side of
+the histogram.</span> </span></p>
+</div>
+<p></a></p>
+<div id="perm1" style="display:none;">
+<ul>
+<li><p><code>myTest &lt;- ...perform the initial test...</code></p>
+<p>This could be a <code>t.test</code>, <code>wilcox.test</code>,
+<code>aov</code>, <code>kruskal.test</code>, <code>lm</code>,
+<code>glm</code>, <code>chisq.test</code>, or any other R code that
+results in a test statistic. It could even simply be the mean or
+standard deviation of the data.</p></li>
+<li><p><code>observedTestStat &lt;- ...get the test statistic...</code></p>
+<p>Save the test statistic of your test into the object called
+<code>observedTestStat</code>. For tests that always result in a single
+test statistic like a <code>t.test</code>, <code>wilcox.test</code>,
+<code>kruskal.test</code>, and <code>chisq.test</code> it is
+<code>myTest$statistic</code>. For an <code>aov</code>, <code>lm</code>,
+or <code>glm</code> try printing <code>summary(myTest)[]</code> to see
+what values you are interested in using.</p></li>
+<li><p><code>N &lt;- 2000</code> N is the number of times you will reuse
+the data to create the sampling distribution of the test statistic. A
+typical choice is 2000, but sometimes 10000, or 100000 reuses are needed
+before useful answers can be obtained.</p></li>
+<li><p><code>permutedTestStats &lt;- rep(NA, N)</code> This is a storage
+container that will be used to store the test statistics from each of
+the thousands of reuses of the data. The <code>rep()</code> function
+repeats a given value N times. This particular statement repeats NA’s or
+“missing values” N times. This gives us N “empty” storage spots inside
+of <code>permutedTestStats</code> that we can use to store the N test
+statistics from the N reuses of the data we will make in our
+<code>for</code> loop.</p></li>
+<li><p><code>for (i in 1:N)\{</code> The <code>for</code> loop is a
+programming tool that lets us tell R to run a certain code over and over
+again for a certain number of times. In R, the <code>for</code> loop
+must be followed by a space, then an opening parenthesis, then a
+variable name (in this case the variable is called “i”), then the word
+“in” then a list of values. The <code>1:N</code> gives R the list of
+values 1, 2, 3, … and so on all the way up to N. These values are passed
+into <code>i</code> one at a time and the code inside the
+<code>for</code> loop is performed first for <code>i=1</code>, then
+again for <code>i=2</code>, then again for <code>i=3</code> and so on
+until finally <code>i=N</code>. At that point, the <code>for</code> loop
+ends. There is a required closing parenthesis on the
+<code>for (i in 1:N)</code> statement. Any code placed between the
+opening { and closing } brackets will be performed over and over again
+for each value of <code>i=1</code>, <code>i=2</code>, … up through
+<code>i=N</code>.</p></li>
+<li><p>Two spaces in front of every line inside of the opening { and
+closing } brackets helps keep your code organized.</p></li>
+<li><p><code>permutedData &lt;- ...randomly permute the data...</code>
+This is the most important part of the permutation test and takes some
+thinking. The data must be randomly reorganized in a way consistent with
+the null hypothesis. What that means exactly is specific to each
+scenario. Read the Explanation tab for further details on the logic you
+should use here.</p></li>
+<li><p><code>permutedTest &lt;- ...perform test with permutedData...</code>
+The same test that was performed on the original data, should be
+performed again on the randomly permuted data.</p></li>
+<li><p><code>permutedTestStats[i] &lt;- ...get test statistic...</code>
+This is the storage container that was built prior to the
+<code>for (i in 1:N)</code> code. Inside the <code>for</code> loop, this
+container is filled value by value using the square brackets
+<code>[i]</code>. The square brackets <code>[i]</code> allows us to
+access the “i”th position of <code>permutedTestStats</code>. Remember,
+since this code is inside of the <code>for</code> loop, <code>i=1</code>
+the first time through the code, then <code>i=2</code> the second time
+through the code, <code>i=3</code> the third time through, and so on up
+until <code>i=N</code> the <code>N</code>th time through the code. The
+test statistic from <code>permutedTest</code> is accessed here and
+stored into <code>permutedTestStats[i]</code>.</p></li>
+<li><p><code>}</code> The closing } bracket ends the code that is
+repeated over and over again inside the <code>for</code> loop.</p></li>
+<li><p><code>hist(permutedTestStats)</code> Creating a histogram of the
+sampling distribution of the test statistics obtained from the reused
+and permuted data allows us to visually compare the
+<code>observedTestStat</code> to the distribution of test statistics to
+visually see the percentage of test statistics that are as extreme or
+more extreme than the observed test statistic value. This is the
+p-value.</p></li>
+<li><p><code>abline(v=observedTestStat)</code> This adds the
+<code>observedTestStat</code> to the distribution of test statistics to
+visually see the percentage of test statistics that are as extreme or
+more extreme than the observed test statistic value. This is the
+p-value.</p></li>
+<li><p><code>sum(permutedTestStats &gt;= observedTestStat)/N</code> This
+computes a “greater than” p-value. A two-sided p-value could be obtained
+by multiplying this value by 2 if the observed test statistic was on the
+right hand side of the histogram.</p></li>
+<li><p><code>sum(permutedTestStats &lt;= observedTestStat)/N</code> This
+computes a “less than” p-value. A two-sided p-value could be obtained by
+multiplying this value by 2 if the observed test statistic was on the
+left hand side of the histogram.</p></li>
+</ul>
+</div>
+</div>
+</div>
+<hr />
+</div>
+<div id="explanation" class="section level4">
+<h4>Explanation</h4>
+<div style="padding-left:30px;">
+<p>The most difficult part of a permutation test is in the random
+permuting of the data. How the permuting is performed depends on the
+type of hypothesis test being performed. It is important to remember
+that the permutation test only changes the way the p-value is
+calculated. Everything else about the original test is unchanged when
+switching to a permutation test.</p>
+<div id="independent-samples-t-test" class="section level5">
+<h5>Independent Samples t Test</h5>
+<p>For the independent sample t Test, we will use the data from the <a
+href="Analyses/t%20Tests/Examples/SleepIndependentt.html">independent
+sleep</a> analysis. In that analysis, we were using the
+<code>sleep</code> data to test the hypotheses:</p>
+<p><span class="math display">\[
+  H_0: \mu_\text{Extra Hours of Sleep with Drug 1} - \mu_\text{Extra
+Hours of Sleep with Drug 2} = 0
+\]</span> <span class="math display">\[
+H_a: \mu_\text{Extra Hours of Sleep with Drug 1} - \mu_\text{Extra Hours
+of Sleep with Drug 2} \neq 0
+\]</span></p>
+<p>We used a significance level of <span class="math inline">\(\alpha =
+0.05\)</span> and obtained a P-value of <span
+class="math inline">\(0.07939\)</span>. Let’s demonstrate how a
+permutation test could be used to obtain this same p-value. (Technically
+you only need to use a permutation test when the requirements of the
+original test were not satisfied. However, it is also reasonable to
+perform a permutation test anytime you want. No requirements need to be
+checked when performing a permutation test.)</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># First run the initial test and gain the test statistic:</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>myTest <span class="ot">&lt;-</span> <span class="fu">t.test</span>(extra <span class="sc">~</span> group, <span class="at">data =</span> sleep, <span class="at">mu =</span> <span class="dv">0</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>observedTestStat <span class="ot">&lt;-</span> myTest<span class="sc">$</span>statistic</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co"># Now we run the permutations to create a distribution of test statistics</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>permutedTestStats <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, N)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>  permutedTest <span class="ot">&lt;-</span> <span class="fu">t.test</span>(<span class="fu">sample</span>(extra) <span class="sc">~</span> group, <span class="at">data =</span> sleep, <span class="at">mu =</span> <span class="dv">0</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>  permutedTestStats[i] <span class="ot">&lt;-</span> permutedTest<span class="sc">$</span>statistic</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>}</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co"># Now we show a histogram of that distribution</span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="fu">hist</span>(permutedTestStats, <span class="at">col =</span> <span class="st">&quot;skyblue&quot;</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> observedTestStat, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#Greater-Than p-value: Not the correct one in this case</span></span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStats <span class="sc">&gt;=</span> observedTestStat)<span class="sc">/</span>N</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="co"># Less-Than p-value: Not the correct one for this data</span></span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStats <span class="sc">&lt;=</span> observedTestStat)<span class="sc">/</span>N</span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a><span class="co"># Two-Sided p-value: This is the one we want based on our alternative hypothesis.</span></span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="dv">2</span><span class="sc">*</span><span class="fu">sum</span>(permutedTestStats <span class="sc">&lt;=</span> observedTestStat)<span class="sc">/</span>N</span></code></pre></div>
+<p><strong>Note</strong> The Wilcoxon Rank Sum test is run using the
+same code except with
+<code>myTest &lt;- wilcox.test(y ~ x, data=...)</code> instead of
+<code>t.test(...)</code> in both Step’s 1 and 2.</p>
+</div>
+<div id="other-examples" class="section level5">
+<h5>Other Examples</h5>
+<p><a href="javascript:showhide('ptTest')">Paired Samples t Test (and
+Wilcoxon Signed-Rank) <span style="font-size:8pt;">(click to
+show/hide)</span></a></p>
+</div>
+<div id="ptTest" style="display:none;">
+<div id="paired-data-example" class="section level5">
+<h5>Paired Data Example</h5>
+<p>See the <a
+href="./Analyses/t%20Tests/Examples/SleepPairedt.html">Sleep Paired t
+Test</a> example for the background and context of the study. Here is
+how to perform the test as a permutation test instead of a t test.</p>
+<p>The question that this <code>sleep</code> data can answer concerns
+which drug is more effective at increasing the amount of extra sleep an
+individual receives. The associated hypotheses would be <span
+class="math display">\[
+  H_0: \mu_d = 0
+\]</span> <span class="math display">\[
+  H_a: \mu_d \neq 0
+\]</span> where <span class="math inline">\(\mu_d\)</span> denotes the
+true mean of the differences between the observations for each drug
+obtained from each individual. Differences would be obtained by <span
+class="math inline">\(d_i = \text{extra}_{1i} -
+\text{extra}_{2i}\)</span>.</p>
+<p>To perform a permutation test of the hypothesis that the drugs are
+equally effective, we use the following code.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Perform the initial test:</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>myTest <span class="ot">&lt;-</span> <span class="fu">with</span>(sleep, <span class="fu">t.test</span>(extra[group<span class="sc">==</span><span class="dv">1</span>], extra[group<span class="sc">==</span><span class="dv">2</span>], <span class="at">paired =</span> <span class="cn">TRUE</span>, <span class="at">mu =</span> <span class="dv">0</span>))</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co"># Get the test statistic from the test:</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>observedTestStat <span class="ot">&lt;-</span> myTest<span class="sc">$</span>statistic</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co"># Obtain the permutation sampling distribution </span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>permutedTestStats <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, N)</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  permuteValues <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>), <span class="at">size=</span><span class="dv">10</span>, <span class="at">replace=</span><span class="cn">TRUE</span>) </span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  permutedTest <span class="ot">&lt;-</span> <span class="fu">with</span>(sleep, <span class="fu">t.test</span>(permuteValues<span class="sc">*</span>(extra[group<span class="sc">==</span><span class="dv">1</span>] <span class="sc">-</span> extra[group<span class="sc">==</span><span class="dv">2</span>]), <span class="at">mu =</span> <span class="dv">0</span>))</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  <span class="co">#Note, t.test(group1 - group2) is the same as t.test(group1, group2, paired=TRUE).</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>  permutedTestStats[i] <span class="ot">&lt;-</span> permutedTest<span class="sc">$</span>statistic</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>}</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="fu">hist</span>(permutedTestStats)</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>observedTestStat, <span class="at">col=</span><span class="st">&#39;skyblue&#39;</span>, <span class="at">lwd=</span><span class="dv">3</span>)</span></code></pre></div>
+<p><img src="PermutationTests_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Greater than p-value: (not what we want here)</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStats <span class="sc">&gt;=</span> observedTestStat)<span class="sc">/</span>N</span></code></pre></div>
+<pre><code>## [1] 1</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Less than p-value:</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStats <span class="sc">&lt;=</span> observedTestStat)<span class="sc">/</span>N</span></code></pre></div>
+<pre><code>## [1] 0.002</code></pre>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Correct two sided p-value for this study:</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="dv">2</span><span class="sc">*</span><span class="fu">sum</span>(permutedTestStats <span class="sc">&lt;=</span> observedTestStat)<span class="sc">/</span>N</span></code></pre></div>
+<pre><code>## [1] 0.004</code></pre>
+<p><strong>Note</strong>:</p>
+</div>
+</div>
+<p><a href="javascript:showhide('ANOVA')">ANOVA <span
+style="font-size:8pt;">(click to show/hide)</span></a></p>
+<div id="ANOVA" style="display:none;">
+<div id="one-way-anova" class="section level5">
+<h5>One-Way ANOVA</h5>
+<p>For this example, we will use the data from the <a
+href="Analyses/chickwtsOneWayANOVA.html">chick weights</a> analysis.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Again, we run the initial test and find the test statistic</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>myTest <span class="ot">&lt;-</span> <span class="fu">aov</span>(weight <span class="sc">~</span> feed, <span class="at">data =</span> chickwts)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>observedTestStat <span class="ot">&lt;-</span> <span class="fu">summary</span>(myTest)[[<span class="dv">1</span>]]<span class="sc">$</span><span class="st">`</span><span class="at">F value</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co"># For this permutation, we need to shake up the groups similar to the Independent Sample example</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>permutedTestStats <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, N)</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  permutedTest <span class="ot">&lt;-</span> <span class="fu">aov</span>(<span class="fu">sample</span>(weight) <span class="sc">~</span> feed, <span class="at">data =</span> chickwts)</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  permutedTestStats[i] <span class="ot">&lt;-</span> <span class="fu">summary</span>(permutedTest)[[<span class="dv">1</span>]]<span class="sc">$</span><span class="st">`</span><span class="at">F value</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>}</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co"># The histogram of this distribution gives an interesting insight into the results</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="fu">hist</span>(permutedTestStats, <span class="at">col =</span> <span class="st">&quot;skyblue&quot;</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">16</span>))</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> observedTestStat, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co"># Here is the greater-than p-value (since the F-distribution is right skewed</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co"># this is the only p-value of interest.)</span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStats <span class="sc">&gt;=</span> observedTestStat)<span class="sc">/</span>N</span></code></pre></div>
+</div>
+<div id="two-way-anova" class="section level5">
+<h5>Two-Way ANOVA</h5>
+<p>For the two-way ANOVA, I will use the data from the <a
+href="Analyses/warpbreaksTwoWayANOVA.html">warpbreaks</a> analysis.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># The initial test is done in the same way as one-way ANOVA but there is a little more to find the test statistic</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>myTest <span class="ot">&lt;-</span> <span class="fu">aov</span>(breaks <span class="sc">~</span> wool <span class="sc">+</span> tension <span class="sc">+</span> wool<span class="sc">:</span>tension, <span class="at">data=</span>warpbreaks)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co"># This first test statistic is the comparison between the two types of wool</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>observedTestStatW <span class="ot">&lt;-</span> <span class="fu">summary</span>(myTest)[[<span class="dv">1</span>]]<span class="sc">$</span><span class="st">`</span><span class="at">F value</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co"># This second test statistic is the comparison between the three types of tension</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>observedTestStatT <span class="ot">&lt;-</span> <span class="fu">summary</span>(myTest)[[<span class="dv">1</span>]]<span class="sc">$</span><span class="st">`</span><span class="at">F value</span><span class="st">`</span>[<span class="dv">2</span>]</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co"># The third test statistic is the comparison of the interaction of wool types and tension</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>observedTestStatWT <span class="ot">&lt;-</span> <span class="fu">summary</span>(myTest)[[<span class="dv">1</span>]]<span class="sc">$</span><span class="st">`</span><span class="at">F value</span><span class="st">`</span>[<span class="dv">3</span>]</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co"># Now comes three different permutations for the test. First is for wool, second is for tension, and third is the interaction</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>permutedTestStatsW <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, N)</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>permutedTestStatsT <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, N)</span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>permutedTestStatsWT <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, N)</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  permutedTest <span class="ot">&lt;-</span> <span class="fu">aov</span>(<span class="fu">sample</span>(breaks) <span class="sc">~</span> wool <span class="sc">+</span> tension <span class="sc">+</span> wool<span class="sc">:</span>tension, <span class="at">data=</span>warpbreaks)</span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>  permutedTestStatsW[i] <span class="ot">&lt;-</span> <span class="fu">summary</span>(permutedTest)[[<span class="dv">1</span>]]<span class="sc">$</span><span class="st">`</span><span class="at">F value</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>  permutedTestStatsT[i] <span class="ot">&lt;-</span> <span class="fu">summary</span>(permutedTest)[[<span class="dv">1</span>]]<span class="sc">$</span><span class="st">`</span><span class="at">F value</span><span class="st">`</span>[<span class="dv">2</span>]</span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>  permutedTestStatsWT[i] <span class="ot">&lt;-</span> <span class="fu">summary</span>(permutedTest)[[<span class="dv">1</span>]]<span class="sc">$</span><span class="st">`</span><span class="at">F value</span><span class="st">`</span>[<span class="dv">3</span>]</span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>}</span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a></span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co"># We likewise need three differenct plots to show the distribution. First is wool, second is tension, and third is the interaction</span></span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="fu">hist</span>(permutedTestStatsW, <span class="at">col =</span> <span class="st">&quot;skyblue&quot;</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">14</span>))</span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> observedTestStatW, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a></span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="fu">hist</span>(permutedTestStatsT, <span class="at">col =</span> <span class="st">&quot;skyblue&quot;</span>)</span>
+<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> observedTestStatT, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a></span>
+<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="fu">hist</span>(permutedTestStatsWT, <span class="at">col =</span> <span class="st">&quot;skyblue&quot;</span>)</span>
+<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> observedTestStatWT, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a></span>
+<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="co"># Greater-than p-value: the three situations are in order</span></span>
+<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStatsW <span class="sc">&gt;=</span> observedTestStatW)<span class="sc">/</span>N</span>
+<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a></span>
+<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStatsT <span class="sc">&gt;=</span> observedTestStatT)<span class="sc">/</span>N</span>
+<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a></span>
+<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStatsWT <span class="sc">&gt;=</span> observedTestStatWT)<span class="sc">/</span>N</span>
+<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a></span>
+<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co"># Less-than p-value: again, they are in order</span></span>
+<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStatsW <span class="sc">&lt;=</span> observedTestStatW)<span class="sc">/</span>N</span>
+<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a></span>
+<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStatsT <span class="sc">&lt;=</span> observedTestStatT)<span class="sc">/</span>N</span>
+<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a></span>
+<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStatsWT <span class="sc">&lt;=</span> observedTestStatWT)<span class="sc">/</span>N</span>
+<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a></span>
+<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co"># Two-sided p-values:</span></span>
+<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="dv">2</span><span class="sc">*</span><span class="fu">sum</span>(permutedTestStatsW <span class="sc">&gt;=</span> observedTestStatW)<span class="sc">/</span>N</span>
+<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a></span>
+<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a><span class="dv">2</span><span class="sc">*</span><span class="fu">sum</span>(permutedTestStatsT <span class="sc">&gt;=</span> observedTestStatT)<span class="sc">/</span>N</span>
+<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a></span>
+<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a><span class="dv">2</span><span class="sc">*</span><span class="fu">sum</span>(permutedTestStatsWT <span class="sc">&gt;=</span> observedTestStatWT)<span class="sc">/</span>N</span></code></pre></div>
+</div>
+</div>
+<p><a href="javascript:showhide('LinR')">Simple Linear Regression <span
+style="font-size:8pt;">(click to show/hide)</span></a></p>
+<div id="LinR" style="display:none;">
+<p>For this example, I will use the <code>trees</code> dataset to
+compare the <code>Girth</code> and <code>Height</code> of black cherry
+trees.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># The test and then the test statistic is found in a similar way to that of an ANOVA (this is the t statistic)</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>myTest <span class="ot">&lt;-</span> <span class="fu">lm</span>(Height <span class="sc">~</span> Girth, <span class="at">data =</span> trees)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>observedTestStat <span class="ot">&lt;-</span> <span class="fu">summary</span>(myTest)[[<span class="dv">4</span>]][<span class="dv">2</span>,<span class="dv">3</span>]</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co"># The permutation part is set up in this way</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>permutedTestStats <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, N)</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  permutedTest <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">sample</span>(Height) <span class="sc">~</span> Girth, <span class="at">data =</span> trees)</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  permutedTestStats[i] <span class="ot">&lt;-</span> <span class="fu">summary</span>(permutedTest)[[<span class="dv">4</span>]][<span class="dv">2</span>,<span class="dv">3</span>]</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>}</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co"># Here, as before, is the histogram of the distribution of the test statistics</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="fu">hist</span>(permutedTestStats, <span class="at">col =</span> <span class="st">&quot;skyblue&quot;</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> observedTestStat, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co"># Less-than p-value:</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStats <span class="sc">&lt;=</span> observedTestStat)<span class="sc">/</span>N</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co"># Greater-than p-value:</span></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a><span class="fu">sum</span>(permutedTestStats <span class="sc">&gt;=</span> observedTestStat)<span class="sc">/</span>N</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a><span class="co"># Two-Sided p-value:</span></span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a><span class="dv">2</span><span class="sc">*</span><span class="fu">sum</span>(permutedTestStats <span class="sc">&gt;=</span> observedTestStat)<span class="sc">/</span>N</span></code></pre></div>
+</div>
+</div>
+<hr />
+<footer>
+</footer>
+</div>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

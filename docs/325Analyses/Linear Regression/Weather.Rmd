@@ -1,0 +1,394 @@
+---
+title: "<center> Heatwaves in Japanese Navy Air Bases </center>"
+output: 
+  html_document:
+    theme: united
+    code_folding: hide
+---
+
+```{r, warning=FALSE, message=FALSE, ev}
+library(GSODR)
+library(mosaic)
+library(tidyverse)
+library(pander)
+library(DT)
+library(ggrepel)
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(maps)
+library(tmap)
+library(leaflet)
+library(htmltools)
+library(car)
+library(mosaicData)
+library(ResourceSelection)
+library(reshape2)
+library(RColorBrewer)
+library(scatterplot3d)
+library(readr)
+library(prettydoc)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(sf)
+library(ggspatial)
+library(leaflet.extras)
+
+#run: install.packages("GSODR") 
+# to get the GSODR package. You'll need this package to pull in your weather data.
+load(system.file("extdata", "isd_history.rda", package = "GSODR"))
+
+#Run this in your console to see the Country Names you can pick from:
+View(isd_history)
+#Search "United States" in the search bar of the top-right corner of the data Viewer that pops up.
+#Or search for any other country you are interested in.
+
+#GOAL: select the STNID (station ID) for two different weather stations. 
+#For example, Rexburg is STNID == "726818-94194"
+#Once you have two STNID values selected, go to the next R-chunk.
+
+#To see what columns mean, go here: https://cran.r-project.org/web/packages/GSODR/vignettes/GSODR.html#appendices
+```
+
+<!-- Now write up an analysis that studies something like how well the MIN temperature predicts the MAX temperature of the day in the two cities you selected. Of course, you are welcome to do any multiple regression you want with the data, but the recommendation would be to just run a "two-lines" model with the x=MIN, y=MAX, and color of the dots the NAME column. -->
+
+
+## Background
+
+Japan houses some of the United States finest Navy Bases. I was born on one of them. While Japan is home to many of our exceptional 
+Navy men, Japan is also known for the miserably scorching heatwaves the happen every year. The two criteria for an unmerciful heatwave being: **high temperature and high humidity**.[^1] 
+
+In this study, we will be studying the weather in the following two Japanese cities, *Misawa and Atsugi*, who residence U.S. Navy bases. Additionally, we will use a **Multiple Linear regression** to answer this question: ***Is one Navy base more prone to heatwaves than the other?***
+
+<br><br>
+
+
+
+*The map below depicts the two cities with several features:* 
+
+- **Legend** : the top right legend changes the style of the map when `clicking on a specific option` , showing us how condense the cities are population wise vs. geographically. To inspect further,`Zoom in` to see each city with more detail 
+
+- **Markers** : `Click on each marker` for a general description about the weather patterns that take place during the hottest times of the year in the Atsugi[^2] and Misawa[^3] Air Bases.*
+
+<center>
+
+```{r}
+bases <- data.frame(
+  NAME = c("ATSUGI U.S. NAVAL AIR STATION", "MISAWA NAVAL AIR STATION"),
+  LAT = c(35.456, 40.703),
+  LON = c(139.449, 141.368),
+  COLOR = c("red", "darkred"),
+  POPUP = c("<u>Average High Temperature:</u><br> The hot season lasts for <b>2.7 months</b>, from June 26 to September 18, with an average daily high temperature <b>above 26.11°C</b>.", "<u>Average High Temperature:</u> <br> The warm season lasts for <b>3.0 months</b>, from June 27 to September 26, with an average daily high temperature <b>above 20.56°C</b>."))
+
+sickicons <- awesomeIcons(
+  icon = 'flag',
+  library = 'fa',
+  markerColor=bases$COLOR
+)
+
+leaflet() %>%
+  addProviderTiles(providers$Esri.WorldTopoMap, group = "World Map") %>% 
+  addProviderTiles(providers$Esri.WorldImagery, group = "Terrain Map") %>%
+  setView(lng = 140.5, lat = 38, zoom = 5) %>%  
+  addAwesomeMarkers(
+    lng = bases$LON, lat = bases$LAT,
+    popup = bases$POPUP,
+    label = bases$NAME,
+    labelOptions = labelOptions(
+      noHide = TRUE,
+      direction = "right",
+      textOnly = TRUE,
+      style = list("font-weight" = "bold", "font-size" = "12px")
+    ),
+    icon = sickicons)%>% 
+  addLayersControl(
+  baseGroups = c("World Map", "Terrain Map"), options = layersControlOptions(collapsed = FALSE)
+)
+```
+
+
+</center>
+
+
+<br>
+
+*Click the tab to learn more about the data*
+
+## { .tabset .tabset-pills}
+
+### Hide Data
+
+<br>
+
+---
+
+### Show Data
+
+ The data table below shows what we will be using to answer our question that was stated above. Our data comes from *GSODR’s internal database of station locations*[^4]. From that database, we were able to filter down the data to our two desired cities with their Maximum Temperature, Humidity, and the month the data was recorded. 
+
+
+```{r}
+#Then run a similar code to get your station information for your weather stations.
+#(If you want to use rexburg, then just use one of the following codes)
+
+MISAWA <- get_GSOD(years = 2023, station = "475800-44402")
+
+ATSUGI <- get_GSOD(years = 2023, station = "476790-43319")
+
+#Finally, join your two datasets together into one dataset:
+weather <- rbind(MISAWA,ATSUGI)
+
+weathery <- weather %>%
+  select(c(NAME, MAX, RH, MONTH)) %>%
+  rename( HUMIDITY = RH, 'AIR NAVY BASE' = NAME, MAXTEMP = MAX)
+
+datatable(weathery, options(list=c(3,10,30)))
+```
+
+<br>
+
+---
+
+## Analysis
+
+Based on what we have learned so far about each city, we will further visualize the data in a scatter plot. Looking at the slopes of each city's lines, **Atsugi's slope is more positive slope than Misawa** and showing that Atsugi tends to get more humid as it gets hotter, while in Misawa as it gets hotter there is less humidity. Atsugi's trend combination of **high temperatures and high humidity** leads us to believe that Atsugi may be the city more prone to heatwaves as shown by our scatter plot.
+
+However, before we can trust that final conclusion, we must first check the if the effects of the independent variables (Max temperature, months, etc.) asignificantly impact to humidity through a **multiple linear regression test**. 
+
+<br>
+
+*Hover over each dot to see the individual values*
+
+<center>
+
+```{r message=FALSE, warning=FALSE}
+heatnav <- lm(HUMIDITY ~ MAXTEMP + MONTH + `AIR NAVY BASE` + MAXTEMP:MONTH, data = weathery)
+
+weathery.plot <- ggplot(weathery, aes(y = HUMIDITY, x = MAXTEMP, color = factor(`AIR NAVY BASE`))) +
+  geom_point(aes(
+    text = paste(
+      "Air Navy Base:", `AIR NAVY BASE`, "<br>",
+      "Max Temp:", round(MAXTEMP, 1), "°C<br>",
+      "Humidity:", round(HUMIDITY, 1), "%<br>",
+      "Month:", MONTH
+    )
+  ), size = 1) + 
+  geom_smooth(method = "lm", aes(group = `AIR NAVY BASE`), se = FALSE) +
+  scale_color_manual(name = "Air Naval Bases", 
+                     values = c("red", "darkred"),
+                     labels = c("Atsugi Air Naval Base", "Misawa Air Naval Base")) +
+  labs(title = "Weather Patterns in Japan throughout the Year",
+       x = "Max Temperature (°C)",
+       y="Relative Humidity (%)" ) +
+  theme_minimal()
+
+ggplotly(weathery.plot, tooltip="text")
+```
+
+</center>
+
+<br>
+
+*For bonus insight into the data's relationship, click the tab to reveal the data split up into subsets*
+
+## { .tabset .tabset-pills}
+
+### Hide Month Subsets
+
+<br>
+
+---
+
+### Show Month Subsets
+
+Splitting the data up into subsets lets us see which exact month exhibits the most desirable trends, **high humidity and high temperature**, that could trigger a heatwave. Therefore, we are looking for **which city's data is more often placed to the right of the graph compared to the other** as that symbolizes the **high humidity and temperature** that we want. Based on the different months, we can see that **the city of Atsugi is displayed on the right of the graph more than the city of Misawa**. 
+
+```{r message=FALSE, warning=FALSE,fig.height=9, fig.width=12}
+ggplot(weathery, aes(y = HUMIDITY, x = MAXTEMP, color = factor(`AIR NAVY BASE`))) +
+  geom_point(aes(
+    text = paste(
+      "Air Navy Base:", `AIR NAVY BASE`, "<br>",
+      "Max Temp:", round(MAXTEMP, 1), "°C<br>",
+      "Humidity:", round(HUMIDITY, 1), "%<br>",
+      "Month:", MONTH
+    )
+  ), size = 1) + 
+  geom_smooth(method = "lm", aes(group = `AIR NAVY BASE`), se = FALSE) +
+  scale_color_manual(name = "Air Naval Bases", 
+                     values = c("red", "darkred"),
+                     labels = c("Atsugi Air Naval Base", "Misawa Air Naval Base")) +
+  labs(title = "Weather Patterns in Japan throughout the Year by Months",
+       x = "Max Temperature (°C)",
+       y="Relative Humidity (%)" ) +
+  theme_minimal() +
+  facet_wrap(~MONTH)
+```
+
+</center>
+
+<br>
+
+---
+
+Now that we have visualized the data graphically, we will now further implement and interpret the data through the **multiple linear regression model and tests**. 
+
+## {.tabset .tabset-fade}
+
+### The Mathematical Model
+
+This is the multiple linear regression mathematical model of our study. Additionally, below the model is a table showing what each variable represents. 
+
+
+<center>
+
+$$\underbrace{Y_i}_\text{HUMIDITY} = \beta_0 + \beta_1 \underbrace{X_{i1}}_\text{MAX TEMP.} + \beta_2 \underbrace{X_{i2}}_\text{MONTH} + \beta_3 \underbrace{X_{i3}}_\text{AIR NAVAL BASES}+ \beta_4 \underbrace{X_{i1}X_{i2}}_\text{Interaction between MAX TEMP. & MONTH} + \epsilon_i \text{where} ~ N(0, \sigma^2)$$
+
+<br>
+
+$$X_{3i} = \left\{\begin{array}{ll} 1, & \text{ATSUGI U.S. NAVAL AIR STATION} \\ 0, & \text{MISAWA NAVAL AIR STATION} \end{array}\right.$$
+
+<br>
+
+| Part | What it does |
+| --- | --- |
+| $\beta_0$ (*Intercept*) | **Sets the starting point of the line** on the graph for all the predictors ($X_{i1}$, $X_{i2}$, etc.). |
+| $\beta_1$ (*Effect of MAX TEMP*)| Determines **the change in HUMIDITY** ($Y_i$) associated with one-unit increase in MAX TEMP. (independently from the other predictors) |
+| $\beta_2$ (*Effect of MONTH*) | Determines **the changes in $Y_i$** across the **different months**. |
+| $\beta_3$ (*Effect of AIR NAVAL BASES*)| Determines the **difference in HUMIDITY** between the two **Naval Bases**. |
+| $\beta_4$ (*Interaciton between MAX TEMP. and MONTH*)| Determines the **combined effect of MAX TEMP. and MONTH** on HUMIDITY, quantifying the relationship between MAX TEMP. and HUMIDITY depends on the MONTH.
+- $(+)\beta_4$ = impact of MAX TEMP. on HUMIDITY **increases** during later months
+- $(-)\beta_4$ = impact of MAX TEMP. on HUMIDITY **decreases** during later months|
+
+</center>    
+
+<br>
+
+---
+
+### Hypothesis
+
+For our hypotheses, we will be focusing on $\beta_3$ and $\beta_4$ since it is the variable looking at **the effects of the two Naval bases** and the **interaction of MAX TEMP. and the MONTH** on humidity. 
+
+$$H_0: \beta_3 = 0$$
+
+$$H_a: \beta_3 \neq 0$$
+
+In this hypothesis, null hypothesis states that if $\beta_3$ **equals 0**, there is **no difference** in humidity between the two cities, and if $\beta_3$ **does not equal 0** means that there **is a difference** in humidity between the two cities. 
+
+<br>
+
+$$H_0: \beta_4 = 0$$
+
+$$H_a: \beta_4 \neq 0$$
+
+For this hypothesis, if $\beta_4$ **equals 0**, there is **no change in effect** for **every degree** in MAX TEMP. on HUMIDITY from month to month, and if $\beta_4$ **does not equal 0**, there is a **change in effect** for **every degree** in MAX TEMP. on HUMIDITY from month to month. 
+
+<br>
+
+Additionally, our level of significance will be: 
+
+$$\alpha = 0.05$$
+<br>
+
+Now that we have our hypotheses laid out, we will now test them in with our **multiple linear regression test**. 
+
+<br>
+
+*Click the `Hypothesis` tab to see the test results*
+
+---
+
+#### Multiple Linear Regression Test
+
+The table below shows the results of our **multiple linear regression test*. 
+
+```{r}
+pander(summary(heatnav))
+```
+
+According to the `AIR NAVY BASE MISAWA NAVAL AIR STATION` ($\beta_3$) and `MAXTEMP:MONTH` p-values : 
+
+
+<div style="display: flex; justify-content: space-around;gap:35px;">
+  <div>
+$$\beta_3 \text{ P-value} = 1.917e^{-22} < \alpha$$
+</div>
+<div>
+
+$$\beta_4 \text{ P-value} = 0.002334 < \alpha$$
+</div>
+</div>
+
+Since **both p-values are lower than our level of significance**, this shows that there is a **significant difference in humidity** based on both variables. There is a **10.89% difference** in humidity between each Navy Base and for every **degree increase**, the average humidity percent increased by **0.05472%** from month to month. 
+
+Yet, before we are to completely trust the results of these test results, we will now **check the appropriateness** of the model through diagnostic plots. 
+
+<br>
+
+*Click the `Diagnostic Test` tab to see the results.*
+
+
+---
+
+### Diagnostic Test
+
+<center>
+
+```{r,fig.height=5, fig.width=12}
+par(mfrow=c(1,3))
+
+plot(heatnav, which=1)
+
+qqPlot(heatnav, id=FALSE, main= "Q-Q plot", col="darkred", col.lines = "red", pch = 16)
+
+plot(heatnav$residuals, main="Residuals vs Order")
+```
+
+<div style="display: flex; justify-content: space-around;gap:35px;">
+  <div>
+The **Residuals versus Fitted Values plot** assesses ***Linear Relation and Constant Variance***.
+  </div> 
+  <div>
+The **Q-Q Residuals plot** assesses **Normal Errors**.  
+  </div> 
+  <div>
+The **Residuals versus Order plot** checks for **Independent Errors**. 
+  </div>
+  </div>
+
+</center>
+
+Overall, **the data passes most of the assumptions**. The visualization of constant variance and linearity from the first plot are good due to randomly scattered residuals. In the second plot, while there is a single outlier at the top of the graph and some points in the middle of the graph are on the edge of the the bounds of normality does indicate a non-normality of residuals, it is not a significantly big deviation so our results wouldn't be extremely effected. Additionally, with no clear pattern in the third graph we can assume residual independence. 
+
+Even with one of the graphs not completely passing the assumptions, this means that **we should take the results and the interpretation of these results with caution**. 
+
+
+<br>
+
+---
+
+## Interpretation
+
+With the collaboration of our graphics and our **multiple linear regression test**, we are able to see that **the Japanese U.S. Naval Air Station of Atsugi is more prone to heat waves than the Naval Air Station of Misawa**.
+
+Through our scatter plot, we were able to see that **the Naval Air Base of Atsugi tends to be more hot and more humid than Misawa over the course of a year**. While the temperature increases, the humidity in Atsugi also **increases** when Misawa's humidity **decreases** instead. Thus, the weather trends in Atsugi fulfills the **high temperature high humidity** criteria more often than Misawa, making Atsugi the more heatwave susceptible city.  
+
+Our **multiple linear regression test** shows that the different cities through the $\beta_3$ p-value ($1.917e^{-22}$) and the interaction between max temperature and month p-value ($\beta_4$ = 0.002334) are **significant relevant** predictors to determine which city has the tendency to get heatwaves. Between the two bases, there is a **10.89% difference in humidity**, and for each degree increase in temperature (°F), **the average humidity increased by 0.05472%** from month to month. 
+
+Despite these findings, our data falls slightly short of our requirements. While these deviations are minor, we should still interpret our current findings with caution. For cities prone to heatwaves, we recommend equipping residents for extreme weather conditions and educating them about heatwave dangers to ensure better cooperation during critical periods. 
+
+<br>
+
+---
+
+### Sources
+
+[^1]:[National Library of Medicine: Severe heatwave in Japan](https://pmc.ncbi.nlm.nih.gov/articles/PMC6442519/)
+
+[^2]: [Climate and Average Weather Year Round in Atsugi Air Base](https://weatherspark.com/y/149404/Average-Weather-at-Atsugi-United-States-Naval-Air-Station-Japan-Year-Round)
+
+[^3]: [Climate and Average Weather Year Round in Misawa Air Base](https://weatherspark.com/y/149421/Average-Weather-at-Misawa-Air-Base-Japan-Year-Round)
+
+[^4]: [Appendix 1: GSODR Final Data Format, Contents and Units](https://cran.r-project.org/web/packages/GSODR/vignettes/GSODR.html#appendices)
+
