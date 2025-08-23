@@ -74,65 +74,77 @@ This page, and all pages of this notebook, are meant to be customized to become 
 
 ## Search Bar
 
+<div id="search-ui">
+  <form id="search-form" onsubmit="return false;">
+    <input id="q" type="text" placeholder="Search the whole site…"
+           style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px" />
+  </form>
+  <p id="status" style="margin-top:8px;color:#777;">Loading index…</p>
+  <ul id="results"></ul>
+</div>
+
+<!-- MiniSearch -->
 <script src="https://unpkg.com/minisearch@6.3.0/dist/umd/index.min.js"></script>
+
 <script>
-const INDEX_URL = "https://b33per.github.io/Statistics_Notebook/search-index.json"; // exact file
+// wait until the HTML above exists
+document.addEventListener('DOMContentLoaded', function () {
+  const INDEX_URL = "https://b33per.github.io/Statistics_Notebook/search-index.json";
+  const qEl      = document.getElementById('q');
+  const statusEl = document.getElementById('status');
+  const resultsEl= document.getElementById('results');
 
-let miniSearch = null;
+  if (!qEl || !statusEl || !resultsEl) return; // safety
 
-function render(results) {
-  const ul = document.getElementById('results');
-  ul.innerHTML = results.map(r =>
-    `<li style="margin:8px 0">
-       <a href="${r.url}">${r.title || r.url}</a><br/><small>${r.url}</small>
-     </li>`
-  ).join('');
-  document.getElementById('status').textContent =
-    results.length ? `${results.length} result(s)` : 'No matches';
-}
+  let miniSearch = null;
 
-async function loadIndex() {
-  // debug: show exactly what we’re fetching
-  console.log("Fetching index:", INDEX_URL);
-
-  try {
-    const res = await fetch(INDEX_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const docs = await res.json();
-
-    miniSearch = new MiniSearch({
-      fields: ["title","content"],
-      storeFields: ["title","url"],
-      processTerm: t => t.toLowerCase()
-    });
-    miniSearch.addAll(docs.map(d => ({
-      title: (d.title||"").toLowerCase(),
-      url: d.url,
-      content: (d.content||"").toLowerCase()
-    })));
-
-    document.getElementById('status').textContent = `Indexed ${docs.length} page(s). Type & press Enter.`;
-  } catch (e) {
-    document.getElementById('status').textContent = `Could not load search index (${e.message}).`;
-    console.error("fetch failed:", e);
+  function render(results) {
+    resultsEl.innerHTML = results.map(r => `
+      <li style="margin:8px 0">
+        <a href="${r.url}">${r.title || r.url}</a><br/>
+        <small>${r.url}</small>
+      </li>`).join('');
+    statusEl.textContent = results.length ? `${results.length} result(s)` : 'No matches';
   }
-}
 
-function doSearch() {
-  const q = (document.getElementById('q').value || "").trim().toLowerCase();
-  if (!miniSearch || !q) { render([]); return; }
-  render(miniSearch.search(q, { prefix: true, fuzzy: 0.2 }));
-}
+  async function loadIndex() {
+    try {
+      const res = await fetch(INDEX_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const docs = await res.json();
 
-document.getElementById('q').addEventListener('input', () => {
-  const v = (document.getElementById('q').value || "").trim().toLowerCase();
-  if (!v || !miniSearch) return;
-  render(miniSearch.search(v, { prefix: true, fuzzy: 0.2 }));
+      miniSearch = new MiniSearch({
+        fields: ["title","content"],
+        storeFields: ["title","url"],
+        processTerm: t => t.toLowerCase()
+      });
+
+      // lower-case text for case-insensitive matching
+      miniSearch.addAll(docs.map(d => ({
+        title: (d.title||"").toLowerCase(),
+        url: d.url,
+        content: (d.content||"").toLowerCase()
+      })));
+
+      statusEl.textContent = `Indexed ${docs.length} page(s). Type & press Enter.`;
+    } catch (e) {
+      statusEl.textContent = `Could not load search index (${e.message}).`;
+      console.error("fetch failed:", e);
+    }
+  }
+
+  function doSearchNow() {
+    const query = (qEl.value || "").trim().toLowerCase();
+    if (!miniSearch || !query) { render([]); return; }
+    render(miniSearch.search(query, { prefix: true, fuzzy: 0.2 }));
+  }
+
+  qEl.addEventListener('input', doSearchNow);
+  qEl.form.addEventListener('submit', (e) => { e.preventDefault(); doSearchNow(); });
+
+  loadIndex();
 });
-
-loadIndex();
 </script>
-
 
 ---
 
