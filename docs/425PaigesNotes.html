@@ -1361,12 +1361,18 @@ percentage of the data)</li>
 <span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="fu">plot</span>(weathering)</span></code></pre></div>
 <p><img src="425PaigesNotes_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">favstats</span>(Temp <span class="sc">~</span> Month, <span class="at">data=</span>airquality)</span></code></pre></div>
-<pre><code>##   Month min   Q1 median    Q3 max     mean       sd  n missing
-## 1     5  56 60.0     66 69.00  81 65.54839 6.854870 31       0
-## 2     6  65 76.0     78 82.75  93 79.10000 6.598589 30       0
-## 3     7  73 81.5     84 86.00  92 83.90323 4.315513 31       0
-## 4     8  72 79.0     82 88.50  97 83.96774 6.585256 31       0
-## 5     9  63 71.0     76 81.00  93 76.90000 8.355671 30       0</code></pre>
+<pre><code>##   Month min   Q1 median    Q3 max     mean
+## 1     5  56 60.0     66 69.00  81 65.54839
+## 2     6  65 76.0     78 82.75  93 79.10000
+## 3     7  73 81.5     84 86.00  92 83.90323
+## 4     8  72 79.0     82 88.50  97 83.96774
+## 5     9  63 71.0     76 81.00  93 76.90000
+##         sd  n missing
+## 1 6.854870 31       0
+## 2 6.598589 30       0
+## 3 4.315513 31       0
+## 4 6.585256 31       0
+## 5 8.355671 30       0</code></pre>
 <ol start="4" style="list-style-type: decimal">
 <li>Part 3: Estimating the Mean and Spread of Y for Quantitative X</li>
 </ol>
@@ -3234,7 +3240,8 @@ class="sourceCode r"><code class="sourceCode r"><span id="cb119-1"><a href="#cb1
 <span id="cb119-28"><a href="#cb119-28" tabindex="-1"></a><span class="fu">curve</span>( b.y[<span class="dv">1</span>] <span class="sc">+</span> b.y[<span class="dv">2</span>]<span class="sc">*</span>x , <span class="at">add=</span><span class="cn">TRUE</span>, <span class="at">col=</span><span class="dv">4</span>)</span>
 <span id="cb119-29"><a href="#cb119-29" tabindex="-1"></a></span>
 <span id="cb119-30"><a href="#cb119-30" tabindex="-1"></a><span class="fu">curve</span>( <span class="fu">sqrt</span>(b<span class="fl">.2</span>[<span class="dv">1</span>] <span class="sc">+</span> b<span class="fl">.2</span>[<span class="dv">2</span>]<span class="sc">*</span>x) , <span class="at">add=</span><span class="cn">TRUE</span>, <span class="at">col=</span><span class="dv">5</span>)</span></code></pre></div>
-<pre><code>## Warning in sqrt(b.2[1] + b.2[2] * x): NaNs produced</code></pre>
+<pre><code>## Warning in sqrt(b.2[1] + b.2[2] * x): NaNs
+## produced</code></pre>
 <div class="sourceCode" id="cb121"><pre
 class="sourceCode r"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" tabindex="-1"></a><span class="fu">curve</span>( (b.ss[<span class="dv">1</span>] <span class="sc">+</span> b.ss[<span class="dv">2</span>]<span class="sc">*</span>x)<span class="sc">^</span><span class="dv">4</span> , <span class="at">add=</span><span class="cn">TRUE</span>, <span class="at">col=</span><span class="dv">6</span>)</span></code></pre></div>
 <p><img src="425PaigesNotes_files/figure-html/unnamed-chunk-60-1.png" width="672" /></p>
