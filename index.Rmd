@@ -76,16 +76,15 @@ This page, and all pages of this notebook, are meant to be customized to become 
 
 <div id="search-ui">
   <form id="search-form" onsubmit="return false;">
-    <input id="q" type="text" placeholder="Search the whole site…"
-           style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;" />
+    <input id="q" type="text" placeholder="Search pages and sections…"
+           style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);" />
   </form>
-  <p id="status" style="margin-top:8px;color:#777;">Loading search...</p>
-  <ul id="results" style="list-style:none;padding:0;"></ul>
+  <p id="status" style="margin-top:8px;color:#777;font-size:14px;">Loading search...</p>
+  <ul id="results" style="list-style:none;padding:0;margin-top:10px;"></ul>
 </div>
 
-<!-- Try multiple CDN sources for MiniSearch -->
+<!-- Enhanced search with section support -->
 <script>
-// First try to load MiniSearch from CDN
 function loadMiniSearch() {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -102,7 +101,6 @@ function loadMiniSearch() {
   });
 }
 
-// Backup: simple search without MiniSearch
 function simpleSearch(docs, query) {
   if (!query) return [];
   const searchTerm = query.toLowerCase();
@@ -125,10 +123,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   try {
     await loadMiniSearch();
     useMiniSearch = true;
-    statusEl.textContent = 'MiniSearch loaded successfully';
   } catch (e) {
-    console.warn('MiniSearch failed to load, using simple search:', e);
-    statusEl.textContent = 'Using simple search (MiniSearch unavailable)';
+    console.warn('MiniSearch failed to load, using simple search');
     useMiniSearch = false;
   }
   
@@ -136,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   try {
     statusEl.textContent = 'Loading search index...';
     
-    // Try multiple possible locations for the search index
     const possibleUrls = [
       'search-index.json',
       './search-index.json',
@@ -144,43 +139,50 @@ document.addEventListener('DOMContentLoaded', async function () {
     ];
     
     let response = null;
-    let indexUrl = null;
-    
     for (const url of possibleUrls) {
       try {
         response = await fetch(url);
-        if (response.ok) {
-          indexUrl = url;
-          break;
-        }
+        if (response.ok) break;
       } catch (e) {
-        console.warn(`Failed to load from ${url}:`, e);
+        continue;
       }
     }
     
     if (!response || !response.ok) {
-      throw new Error('Search index not found in any location');
+      throw new Error('Search index not found');
     }
     
     searchDocs = await response.json();
-    console.log(`Loaded ${searchDocs.length} documents from ${indexUrl}`);
+    
+    // Count pages and sections
+    const pageCount = searchDocs.filter(doc => doc.type === 'page').length;
+    const sectionCount = searchDocs.filter(doc => doc.type === 'section').length;
+    
+    console.log(`Loaded ${pageCount} pages and ${sectionCount} sections`);
     
     // Initialize MiniSearch if available
     if (useMiniSearch && typeof MiniSearch !== 'undefined') {
       miniSearch = new MiniSearch({
         fields: ['title', 'content'],
-        storeFields: ['title', 'url']
+        storeFields: ['title', 'url', 'type', 'parent_page'],
+        searchOptions: {
+          boost: { title: 2 },  // Boost title matches
+          prefix: true,
+          fuzzy: 0.2
+        }
       });
       
       miniSearch.addAll(searchDocs.map((doc, i) => ({
         id: i,
         title: doc.title || '',
         url: doc.url,
-        content: doc.content || ''
+        content: doc.content || '',
+        type: doc.type || 'page',
+        parent_page: doc.parent_page || ''
       })));
     }
     
-    statusEl.textContent = `Ready to search ${searchDocs.length} pages`;
+    statusEl.textContent = `Ready to search ${pageCount} pages and ${sectionCount} sections`;
     
   } catch (e) {
     statusEl.textContent = `Error loading search: ${e.message}`;
@@ -188,21 +190,57 @@ document.addEventListener('DOMContentLoaded', async function () {
     return;
   }
   
-  // Render search results
+  // Enhanced render function with better styling
   function render(results) {
     if (!results || results.length === 0) {
       resultsEl.innerHTML = '';
-      statusEl.textContent = qEl.value.trim() ? 'No matches found' : `Ready to search ${searchDocs.length} pages`;
+      const pageCount = searchDocs.filter(doc => doc.type === 'page').length;
+      const sectionCount = searchDocs.filter(doc => doc.type === 'section').length;
+      statusEl.textContent = qEl.value.trim() ? 'No matches found' : `Ready to search ${pageCount} pages and ${sectionCount} sections`;
       return;
     }
     
-    resultsEl.innerHTML = results.slice(0, 8).map(r => `
-      <li style="margin:10px 0;padding:10px;border:1px solid #ddd;border-radius:4px;background:#f9f9f9;">
-        <a href="${r.url}" style="font-weight:bold;color:#0066cc;text-decoration:none;">${r.title}</a><br/>
-        <small style="color:#666;">${r.url}</small>
-      </li>`).join('');
+    resultsEl.innerHTML = results.slice(0, 10).map(r => {
+      const doc = searchDocs.find(d => d.url === r.url);
+      const isSection = doc && doc.type === 'section';
+      const parentPage = doc && doc.parent_page ? doc.parent_page : '';
+      
+      const titleStyle = isSection ? 
+        'font-weight:bold;color:#0066cc;text-decoration:none;font-size:14px;' :
+        'font-weight:bold;color:#0066cc;text-decoration:none;font-size:16px;';
+      
+      const bgColor = isSection ? '#f0f8ff' : '#f9f9f9';
+      const borderColor = isSection ? '#b3d9ff' : '#ddd';
+      
+      let subtitle = '';
+      if (isSection && parentPage) {
+        subtitle = `<small style="color:#888;font-style:italic;">in ${parentPage}</small><br/>`;
+      }
+      
+      const snippet = doc && doc.content ? 
+        doc.content.substring(0, 120) + '...' : '';
+      
+      return `
+        <li style="margin:8px 0;padding:12px;border:1px solid ${borderColor};border-radius:6px;background:${bgColor};box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <a href="${r.url}" style="${titleStyle}">${r.title}</a><br/>
+          ${subtitle}
+          <small style="color:#666;line-height:1.4;display:block;margin:4px 0;">${snippet}</small>
+          <small style="color:#999;font-family:monospace;">${r.url}</small>
+        </li>`;
+    }).join('');
     
-    statusEl.textContent = `${results.length} result(s) found`;
+    const pageResults = results.filter(r => {
+      const doc = searchDocs.find(d => d.url === r.url);
+      return !doc || doc.type !== 'section';
+    }).length;
+    
+    const sectionResults = results.length - pageResults;
+    
+    let statusText = `${results.length} result(s) found`;
+    if (sectionResults > 0) {
+      statusText += ` (${pageResults} pages, ${sectionResults} sections)`;
+    }
+    statusEl.textContent = statusText;
   }
   
   // Search function
@@ -216,10 +254,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     let results = [];
     
     if (useMiniSearch && miniSearch) {
-      // Use MiniSearch if available
-      results = miniSearch.search(query, { prefix: true, fuzzy: 0.2 });
+      results = miniSearch.search(query, { 
+        prefix: true, 
+        fuzzy: 0.2,
+        combineWith: 'OR'
+      });
     } else {
-      // Fall back to simple search
       results = simpleSearch(searchDocs, query);
     }
     
