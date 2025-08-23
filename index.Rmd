@@ -74,77 +74,88 @@ This page, and all pages of this notebook, are meant to be customized to become 
 
 ## Search Bar
 
+## Search Bar
+
 <div id="search-ui">
   <form id="search-form" onsubmit="return false;">
     <input id="q" type="text" placeholder="Search the whole site…"
-           style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px" />
+           style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;" />
   </form>
   <p id="status" style="margin-top:8px;color:#777;">Loading index…</p>
-  <ul id="results"></ul>
+  <ul id="results" style="list-style:none;padding:0;"></ul>
 </div>
 
 <!-- MiniSearch -->
 <script src="https://unpkg.com/minisearch@6.3.0/dist/umd/index.min.js"></script>
-
 <script>
-// wait until the HTML above exists
 document.addEventListener('DOMContentLoaded', function () {
-  const INDEX_URL = "https://b33per.github.io/Statistics_Notebook/search-index.json";
-  const qEl      = document.getElementById('q');
+  const INDEX_URL = "search-index.json";  // Simple path since it's in same directory
+  
+  const qEl = document.getElementById('q');
   const statusEl = document.getElementById('status');
-  const resultsEl= document.getElementById('results');
-
-  if (!qEl || !statusEl || !resultsEl) return; // safety
-
+  const resultsEl = document.getElementById('results');
+  
   let miniSearch = null;
-
+  
   function render(results) {
-    resultsEl.innerHTML = results.map(r => `
-      <li style="margin:8px 0">
-        <a href="${r.url}">${r.title || r.url}</a><br/>
-        <small>${r.url}</small>
+    if (!results || results.length === 0) {
+      resultsEl.innerHTML = '';
+      statusEl.textContent = qEl.value.trim() ? 'No matches found' : 'Type to search...';
+      return;
+    }
+    
+    resultsEl.innerHTML = results.slice(0, 8).map(r => `
+      <li style="margin:10px 0;padding:8px;border:1px solid #ddd;border-radius:4px;">
+        <a href="${r.url}" style="font-weight:bold;color:#0066cc;">${r.title}</a><br/>
+        <small style="color:#666;">${r.url}</small>
       </li>`).join('');
-    statusEl.textContent = results.length ? `${results.length} result(s)` : 'No matches';
+    
+    statusEl.textContent = `${results.length} result(s) found`;
   }
-
+  
   async function loadIndex() {
     try {
-      const res = await fetch(INDEX_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const docs = await res.json();
-
+      const response = await fetch(INDEX_URL);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const docs = await response.json();
+      
       miniSearch = new MiniSearch({
-        fields: ["title","content"],
-        storeFields: ["title","url"],
-        processTerm: t => t.toLowerCase()
+        fields: ["title", "content"],
+        storeFields: ["title", "url"]
       });
-
-      // lower-case text for case-insensitive matching
-      miniSearch.addAll(docs.map(d => ({
-        title: (d.title||"").toLowerCase(),
+      
+      miniSearch.addAll(docs.map((d, i) => ({
+        id: i,
+        title: d.title || "",
         url: d.url,
-        content: (d.content||"").toLowerCase()
+        content: d.content || ""
       })));
-
-      statusEl.textContent = `Indexed ${docs.length} page(s). Type & press Enter.`;
+      
+      statusEl.textContent = `Ready to search ${docs.length} pages`;
+      
     } catch (e) {
-      statusEl.textContent = `Could not load search index (${e.message}).`;
-      console.error("fetch failed:", e);
+      statusEl.textContent = `Error: ${e.message}`;
+      console.error("Search index error:", e);
     }
   }
-
-  function doSearchNow() {
-    const query = (qEl.value || "").trim().toLowerCase();
-    if (!miniSearch || !query) { render([]); return; }
-    render(miniSearch.search(query, { prefix: true, fuzzy: 0.2 }));
+  
+  function doSearch() {
+    const query = qEl.value.trim();
+    if (!miniSearch || !query) {
+      render([]);
+      return;
+    }
+    
+    const results = miniSearch.search(query, { prefix: true, fuzzy: 0.2 });
+    render(results);
   }
-
-  qEl.addEventListener('input', doSearchNow);
-  qEl.form.addEventListener('submit', (e) => { e.preventDefault(); doSearchNow(); });
-
+  
+  qEl.addEventListener('input', doSearch);
   loadIndex();
 });
 </script>
+
 
 ---
 
