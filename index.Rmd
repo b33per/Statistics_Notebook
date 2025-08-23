@@ -75,56 +75,80 @@ This page, and all pages of this notebook, are meant to be customized to become 
 ## Search Bar
 
 
+## Search the whole site
+
 <div id="search-ui">
-  <input id="q" type="text" placeholder="Search the whole site…" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px" />
-  <p id="count" style="margin-top:8px;"></p>
+  <form id="search-form" onsubmit="doSearch(); return false;">
+    <input id="q" type="text" placeholder="Search the whole site…" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px" />
+  </form>
+  <p id="status" style="margin-top:8px;color:#777;">Loading index…</p>
   <ul id="results"></ul>
 </div>
 
-<!-- MiniSearch (tiny client-side search engine) -->
 <script src="https://unpkg.com/minisearch@6.3.0/dist/umd/index.min.js"></script>
-
 <script>
-(async function () {
-  // fetch the prebuilt index (we'll generate this file in a sec)
-  const res = await fetch('search-index.json');
-  const docs = await res.json();
+const INDEX_URL = '/Statistics_Notebook/search-index.json?v=3'; // absolute path (your repo name)
+let miniSearch = null;
 
-  const miniSearch = new MiniSearch({
-    fields: ['title', 'content'],   // index these fields
-    storeFields: ['title', 'url'],  // return these fields
-  });
-  miniSearch.addAll(docs);
+function render(results) {
+  const ul = document.getElementById('results');
+  ul.innerHTML = results.map(r => {
+    const title = r.title || r.url;
+    return `<li style="margin:8px 0">
+      <a href="${r.url}">${title}</a><br/><small>${r.url}</small>
+    </li>`;
+  }).join('');
+  document.getElementById('status').textContent =
+    results.length ? `${results.length} result(s)` : 'No matches';
+}
 
-  const q = document.getElementById('q');
-  const resultsEl = document.getElementById('results');
-  const countEl = document.getElementById('count');
+async function loadIndex() {
+  try {
+    const res = await fetch(INDEX_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const docs = await res.json();
 
-  function render(results) {
-    resultsEl.innerHTML = results.map(r => {
-      const title = r.title || r.url;
-      const url = r.url;
-      return `<li style="margin:8px 0">
-        <a href="${url}">${title}</a><br/>
-        <small>${url}</small>
-      </li>`;
-    }).join('');
-    countEl.textContent = results.length ? `${results.length} result(s)` : '';
+    // Case-insensitive: lowercase everything
+    miniSearch = new MiniSearch({
+      fields: ['title','content'],
+      storeFields: ['title','url'],
+      processTerm: t => t.toLowerCase()
+    });
+    // also lowercase content/title before indexing (extra safe)
+    miniSearch.addAll(docs.map(d => ({
+      title: (d.title || '').toLowerCase(),
+      url: d.url,
+      content: (d.content || '').toLowerCase()
+    })));
+
+    document.getElementById('status').textContent =
+      `Indexed ${docs.length} page(s). Type & press Enter.`;
+  } catch (e) {
+    document.getElementById('status').textContent =
+      'Could not load search index.';
+    console.error('fetch failed:', e);
   }
+}
 
-  q.addEventListener('input', () => {
-    const query = q.value.trim();
-    if (!query) { resultsEl.innerHTML = ''; countEl.textContent = ''; return; }
-    const results = miniSearch.search(query, { fuzzy: 0.2, prefix: true });
-    render(results);
-  });
-})();
+function doSearch() {
+  const q = (document.getElementById('q').value || '').trim().toLowerCase();
+  if (!miniSearch || !q) { render([]); return; }
+  const results = miniSearch.search(q, { prefix: true, fuzzy: 0.2 });
+  render(results);
+}
+
+document.getElementById('q').addEventListener('input', () => {
+  const v = (document.getElementById('q').value || '').trim().toLowerCase();
+  if (!v || !miniSearch) return;
+  render(miniSearch.search(v, { prefix: true, fuzzy: 0.2 }));
+});
+
+loadIndex();
 </script>
 
 
 
 ---
-
 
 ## Table of Contents
 
@@ -8456,7 +8480,7 @@ ggplot(air2, aes(x=Ozone, y=Temp)) +
 #   geom_line(data=air2, aes(y=mylo$fitted, x=Ozone))  # Use fitted values from loess
 ```
 
-![](C:/Users/paige/OneDrive/Pictures/Screenshots/Screenshot 2025-01-11 183505.png)
+![](images/Screenshot 2025-01-11 183505.png)
 
 </td>
 </tr>
