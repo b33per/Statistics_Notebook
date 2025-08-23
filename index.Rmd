@@ -74,17 +74,107 @@ This page, and all pages of this notebook, are meant to be customized to become 
 
 ## Search Bar
 
+<style>
+.search-highlight {
+  background-color: #ffff00;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.search-result-page {
+  color: #0066cc;
+  font-weight: bold;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.search-result-section {
+  color: #666;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.search-result-preview {
+  background: #f8f9fa;
+  border-left: 3px solid #0066cc;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+  line-height: 1.4;
+}
+</style>
+
 <div id="search-ui">
   <form id="search-form" onsubmit="return false;">
-    <input id="q" type="text" placeholder="Search pages and sections…"
+    <input id="q" type="text" placeholder="Search pages, sections, and content…"
            style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);" />
   </form>
-  <p id="status" style="margin-top:8px;color:#777;font-size:14px;">Loading search...</p>
+  <p id="status" style="margin-top:8px;color:#777;font-size:14px;">Loading advanced search...</p>
   <ul id="results" style="list-style:none;padding:0;margin-top:10px;"></ul>
 </div>
 
-<!-- Enhanced search with section support -->
 <script>
+// Highlight search terms in text
+function highlightText(text, searchTerms) {
+  if (!text || !searchTerms.length) return text;
+  
+  let highlightedText = text;
+  searchTerms.forEach(term => {
+    if (term.length > 2) {  // Only highlight terms longer than 2 characters
+      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      highlightedText = highlightedText.replace(regex, '<span class="search-highlight">$1</span>');
+    }
+  });
+  
+  return highlightedText;
+}
+
+// Find the best sentence match for search terms
+function findBestSentence(sentences, searchTerms) {
+  if (!sentences || sentences.length === 0) return '';
+  
+  let bestSentence = '';
+  let bestScore = 0;
+  
+  sentences.forEach(sentence => {
+    let score = 0;
+    searchTerms.forEach(term => {
+      if (sentence.toLowerCase().includes(term.toLowerCase())) {
+        score += term.length;
+      }
+    });
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestSentence = sentence;
+    }
+  });
+  
+  // If no exact match, return first substantial sentence
+  if (!bestSentence && sentences.length > 0) {
+    bestSentence = sentences.find(s => s.length > 50) || sentences[0];
+  }
+  
+  return bestSentence;
+}
+
+// Add highlighting script for target pages
+function addHighlightingScript(url, searchTerms) {
+  if (!searchTerms.length) return url;
+  
+  const terms = searchTerms.filter(term => term.length > 2);
+  if (terms.length === 0) return url;
+  
+  // Add search terms as URL parameters
+  const urlObj = new URL(url, window.location.origin + window.location.pathname.replace(/[^/]*$/, ''));
+  urlObj.searchParams.set('highlight', terms.join(','));
+  
+  return urlObj.href;
+}
+
 function loadMiniSearch() {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -103,11 +193,16 @@ function loadMiniSearch() {
 
 function simpleSearch(docs, query) {
   if (!query) return [];
-  const searchTerm = query.toLowerCase();
-  return docs.filter(doc => 
-    doc.title.toLowerCase().includes(searchTerm) || 
-    doc.content.toLowerCase().includes(searchTerm)
-  ).map((doc, index) => ({ ...doc, id: index }));
+  const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 1);
+  
+  return docs.filter(doc => {
+    const title = (doc.title || '').toLowerCase();
+    const content = (doc.content || '').toLowerCase();
+    
+    return searchTerms.some(term => 
+      title.includes(term) || content.includes(term)
+    );
+  }).map((doc, index) => ({ ...doc, id: index }));
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -154,7 +249,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     
     searchDocs = await response.json();
     
-    // Count pages and sections
     const pageCount = searchDocs.filter(doc => doc.type === 'page').length;
     const sectionCount = searchDocs.filter(doc => doc.type === 'section').length;
     
@@ -164,11 +258,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (useMiniSearch && typeof MiniSearch !== 'undefined') {
       miniSearch = new MiniSearch({
         fields: ['title', 'content'],
-        storeFields: ['title', 'url', 'type', 'parent_page'],
+        storeFields: ['title', 'url', 'type', 'page_title', 'section_title', 'sentences'],
         searchOptions: {
-          boost: { title: 2 },  // Boost title matches
+          boost: { title: 3 },
           prefix: true,
-          fuzzy: 0.2
+          fuzzy: 0.2,
+          combineWith: 'OR'
         }
       });
       
@@ -178,11 +273,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         url: doc.url,
         content: doc.content || '',
         type: doc.type || 'page',
-        parent_page: doc.parent_page || ''
+        page_title: doc.page_title || '',
+        section_title: doc.section_title || '',
+        sentences: doc.sentences || []
       })));
     }
     
-    statusEl.textContent = `Ready to search ${pageCount} pages and ${sectionCount} sections`;
+    statusEl.textContent = `Ready to search ${pageCount} pages and ${sectionCount} sections with sentence-level previews`;
     
   } catch (e) {
     statusEl.textContent = `Error loading search: ${e.message}`;
@@ -190,8 +287,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     return;
   }
   
-  // Enhanced render function with better styling
-  function render(results) {
+  // Enhanced render function with sentence previews
+  function render(results, searchTerms = []) {
     if (!results || results.length === 0) {
       resultsEl.innerHTML = '';
       const pageCount = searchDocs.filter(doc => doc.type === 'page').length;
@@ -200,37 +297,54 @@ document.addEventListener('DOMContentLoaded', async function () {
       return;
     }
     
-    resultsEl.innerHTML = results.slice(0, 10).map(r => {
-      const doc = searchDocs.find(d => d.url === r.url);
-      const isSection = doc && doc.type === 'section';
-      const parentPage = doc && doc.parent_page ? doc.parent_page : '';
+    resultsEl.innerHTML = results.slice(0, 8).map(r => {
+      const doc = searchDocs.find(d => d.url === r.url || d.id === r.id);
+      if (!doc) return '';
       
+      const isSection = doc.type === 'section';
+      const pageTitle = doc.page_title || 'Unknown Page';
+      const sectionTitle = doc.section_title || '';
+      
+      // Create enhanced URL with highlighting
+      const enhancedUrl = addHighlightingScript(doc.url, searchTerms);
+      
+      // Find best matching sentence
+      const bestSentence = findBestSentence(doc.sentences || [], searchTerms);
+      const highlightedSentence = highlightText(bestSentence, searchTerms);
+      
+      // Style based on type
       const titleStyle = isSection ? 
-        'font-weight:bold;color:#0066cc;text-decoration:none;font-size:14px;' :
+        'font-weight:bold;color:#0066cc;text-decoration:none;font-size:15px;' :
         'font-weight:bold;color:#0066cc;text-decoration:none;font-size:16px;';
       
       const bgColor = isSection ? '#f0f8ff' : '#f9f9f9';
       const borderColor = isSection ? '#b3d9ff' : '#ddd';
       
-      let subtitle = '';
-      if (isSection && parentPage) {
-        subtitle = `<small style="color:#888;font-style:italic;">in ${parentPage}</small><br/>`;
+      // Build result HTML
+      let resultHtml = `
+        <li style="margin:10px 0;padding:15px;border:1px solid ${borderColor};border-radius:6px;background:${bgColor};box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <div class="search-result-page">📄 ${pageTitle}</div>`;
+      
+      if (isSection) {
+        resultHtml += `<div class="search-result-section">📍 Section: ${sectionTitle}</div>`;
       }
       
-      const snippet = doc && doc.content ? 
-        doc.content.substring(0, 120) + '...' : '';
+      resultHtml += `
+          <a href="${enhancedUrl}" style="${titleStyle}">${highlightText(doc.title, searchTerms)}</a>`;
       
-      return `
-        <li style="margin:8px 0;padding:12px;border:1px solid ${borderColor};border-radius:6px;background:${bgColor};box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <a href="${r.url}" style="${titleStyle}">${r.title}</a><br/>
-          ${subtitle}
-          <small style="color:#666;line-height:1.4;display:block;margin:4px 0;">${snippet}</small>
-          <small style="color:#999;font-family:monospace;">${r.url}</small>
+      if (highlightedSentence) {
+        resultHtml += `<div class="search-result-preview">"${highlightedSentence}"</div>`;
+      }
+      
+      resultHtml += `
+          <small style="color:#999;font-family:monospace;font-size:11px;">${doc.url}</small>
         </li>`;
+      
+      return resultHtml;
     }).join('');
     
     const pageResults = results.filter(r => {
-      const doc = searchDocs.find(d => d.url === r.url);
+      const doc = searchDocs.find(d => d.url === r.url || d.id === r.id);
       return !doc || doc.type !== 'section';
     }).length;
     
@@ -251,6 +365,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       return;
     }
     
+    const searchTerms = query.split(/\s+/).filter(term => term.length > 1);
     let results = [];
     
     if (useMiniSearch && miniSearch) {
@@ -263,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       results = simpleSearch(searchDocs, query);
     }
     
-    render(results);
+    render(results, searchTerms);
   }
   
   // Event listeners
@@ -273,6 +388,69 @@ document.addEventListener('DOMContentLoaded', async function () {
     doSearch(); 
   });
 });
+
+// Add highlighting to pages when they load with highlight parameter
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const highlightTerms = urlParams.get('highlight');
+  
+  if (highlightTerms) {
+    const terms = highlightTerms.split(',').filter(term => term.length > 2);
+    
+    // Wait for page to load
+    window.addEventListener('load', function() {
+      setTimeout(() => {
+        terms.forEach(term => {
+          highlightTextInPage(term);
+        });
+        
+        // Scroll to first highlight
+        const firstHighlight = document.querySelector('.search-highlight');
+        if (firstHighlight) {
+          firstHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    });
+  }
+  
+  function highlightTextInPage(searchTerm) {
+    if (!searchTerm || searchTerm.length < 3) return;
+    
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function(node) {
+          // Skip script, style, and already highlighted elements
+          const parent = node.parentElement;
+          if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE' || 
+                        parent.classList.contains('search-highlight'))) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+    
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+      textNodes.push(node);
+    }
+    
+    textNodes.forEach(textNode => {
+      const text = textNode.textContent;
+      const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      
+      if (regex.test(text)) {
+        const highlightedHTML = text.replace(regex, '<span class="search-highlight">$1</span>');
+        const wrapper = document.createElement('span');
+        wrapper.innerHTML = highlightedHTML;
+        textNode.parentNode.replaceChild(wrapper, textNode);
+      }
+    });
+  }
+})();
 </script>
 
 
