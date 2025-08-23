@@ -72,6 +72,59 @@ This page, and all pages of this notebook, are meant to be customized to become 
 
 ---
 
+## Search Bar
+
+
+<div id="search-ui">
+  <input id="q" type="text" placeholder="Search the whole site…" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px" />
+  <p id="count" style="margin-top:8px;"></p>
+  <ul id="results"></ul>
+</div>
+
+<!-- MiniSearch (tiny client-side search engine) -->
+<script src="https://unpkg.com/minisearch@6.3.0/dist/umd/index.min.js"></script>
+
+<script>
+(async function () {
+  // fetch the prebuilt index (we'll generate this file in a sec)
+  const res = await fetch('search-index.json');
+  const docs = await res.json();
+
+  const miniSearch = new MiniSearch({
+    fields: ['title', 'content'],   // index these fields
+    storeFields: ['title', 'url'],  // return these fields
+  });
+  miniSearch.addAll(docs);
+
+  const q = document.getElementById('q');
+  const resultsEl = document.getElementById('results');
+  const countEl = document.getElementById('count');
+
+  function render(results) {
+    resultsEl.innerHTML = results.map(r => {
+      const title = r.title || r.url;
+      const url = r.url;
+      return `<li style="margin:8px 0">
+        <a href="${url}">${title}</a><br/>
+        <small>${url}</small>
+      </li>`;
+    }).join('');
+    countEl.textContent = results.length ? `${results.length} result(s)` : '';
+  }
+
+  q.addEventListener('input', () => {
+    const query = q.value.trim();
+    if (!query) { resultsEl.innerHTML = ''; countEl.textContent = ''; return; }
+    const results = miniSearch.search(query, { fuzzy: 0.2, prefix: true });
+    render(results);
+  });
+})();
+</script>
+
+
+
+---
+
 
 ## Table of Contents
 

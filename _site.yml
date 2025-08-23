@@ -98,6 +98,7 @@ navbar:
               href: "./425Analyses/homeworkfocus.html"
 
 
+
 output_dir: "docs"
 
 output: 
@@ -105,7 +106,8 @@ output:
     theme: united
     css: styles.css
     highlight: pygments
+    self_contained: true
     
 resources:
-  - images/**
+  - Images/**
   - styles.css
