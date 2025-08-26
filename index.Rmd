@@ -74,8 +74,8 @@ This page, and all pages of this notebook, are meant to be customized to become 
 
 ## Search Bar
 
-::: {=html}
-
+```{r echo=FALSE, results='asis'}
+cat('
 <div id="search-ui">
 <form id="search-form" onsubmit="return false;">
   <div style="display:flex;align-items:center;gap:10px;">
@@ -91,25 +91,30 @@ This page, and all pages of this notebook, are meant to be customized to become 
 <script src="https://unpkg.com/minisearch@6.3.0/dist/umd/index.min.js"></script>
 <script>
 function clearAllHighlights(){
-  document.querySelectorAll('.search-highlight').forEach(h=>{
+  document.querySelectorAll(\'.search-highlight\').forEach(h=>{
     const p=h.parentNode; p.replaceChild(document.createTextNode(h.textContent),h); p.normalize();
   });
-  const btn=document.getElementById('clear-highlights'); if(btn) btn.style.display='none';
-  const u=new URL(window.location); u.searchParams.delete('highlight'); history.replaceState({},'',u);
+  const btn=document.getElementById(\'clear-highlights\'); if(btn) btn.style.display=\'none\';
+  const u=new URL(window.location); u.searchParams.delete(\'highlight\'); history.replaceState({},\'\',u);
 }
 
-document.addEventListener('DOMContentLoaded',async function(){
-  const INDEX_URL = "https://b33per.github.io/Statistics_Notebook/search-index.json";
-  const qEl=document.getElementById('q'), statusEl=document.getElementById('status'), resultsEl=document.getElementById('results');
-  if(!qEl||!statusEl||!resultsEl){ console.warn('search UI missing'); return; }
+document.addEventListener(\'DOMContentLoaded\',async function(){
+  const INDEX_URL = "search-index.json";  // Relative path for GitHub Pages
+  const qEl=document.getElementById(\'q\'), statusEl=document.getElementById(\'status\'), resultsEl=document.getElementById(\'results\');
+  if(!qEl||!statusEl||!resultsEl){ console.warn(\'search UI missing\'); return; }
 
   let miniSearch=null, docs=[];
   try{
-    const res=await fetch(INDEX_URL,{cache:'no-store'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    const res=await fetch(INDEX_URL,{cache:\'no-store\'});
+    if(!res.ok) throw new Error(\'HTTP \'+res.status);
     docs=await res.json();
-    miniSearch=new MiniSearch({fields:['title','content'], storeFields:['title','url'], processTerm:t=>t.toLowerCase()});
-    miniSearch.addAll(docs.map(d=>({title:(d.title||'').toLowerCase(), url:d.url, content:(d.content||'').toLowerCase()})));
+    miniSearch=new MiniSearch({
+      fields: [\'title\', \'content\'], 
+      storeFields: [\'title\', \'url\'],
+      processTerm: t => t.toLowerCase(),
+      searchOptions: {prefix: true, fuzzy: 0.2}
+    });
+    miniSearch.addAll(docs);
     statusEl.textContent=`Indexed ${docs.length} page(s). Type to search.`;
   }catch(e){
     statusEl.textContent=`Could not load search index (${e.message}).`; console.error(e); return;
@@ -118,22 +123,22 @@ document.addEventListener('DOMContentLoaded',async function(){
   function render(results){
     resultsEl.innerHTML=results.map(r=>`<li style="margin:10px 0;padding:10px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9">
       <a href="${r.url}" style="font-weight:600">${r.title||r.url}</a><br><small style="color:#999">${r.url}</small>
-    </li>`).join('');
-    statusEl.textContent = results.length ? `${results.length} result(s)` : 'No matches';
+    </li>`).join(\'\');
+    statusEl.textContent = results.length ? `${results.length} result(s)` : \'No matches\';
   }
 
   function searchNow(){
-    const q=(qEl.value||'').trim().toLowerCase();
+    const q=(qEl.value||\'\').trim().toLowerCase();
     if(!q){ render([]); return; }
-    render(miniSearch.search(q,{prefix:true,fuzzy:0.2}));
+    render(miniSearch.search(q));
   }
 
-  qEl.addEventListener('input',searchNow);
-  qEl.form.addEventListener('submit',e=>{e.preventDefault(); searchNow();});
+  qEl.addEventListener(\'input\',searchNow);
+  qEl.form.addEventListener(\'submit\',e=>{e.preventDefault(); searchNow();});
 });
 </script>
-
-:::
+')
+```
 
 ---
 
