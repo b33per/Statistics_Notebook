@@ -74,6 +74,8 @@ This page, and all pages of this notebook, are meant to be customized to become 
 
 ## Search Bar
 
+::: {=html}
+
 <div id="search-ui">
 <form id="search-form" onsubmit="return false;">
   <div style="display:flex;align-items:center;gap:10px;">
@@ -131,6 +133,7 @@ document.addEventListener('DOMContentLoaded',async function(){
 });
 </script>
 
+:::
 
 ---
 
