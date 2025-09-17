@@ -1019,8 +1019,7 @@ you are interested.</span> </span></p>
 <p></a></p>
 <div id="goodnessoffit2" style="display:none;">
 <pre><code>## 
-##  Hosmer and Lemeshow goodness of fit (GOF)
-##  test
+##  Hosmer and Lemeshow goodness of fit (GOF) test
 ## 
 ## data:  myglm$y, myglm$fitted
 ## X-squared = 5.7327, df = 8, p-value = 0.6771</code></pre>
@@ -1063,15 +1062,11 @@ more extreme than the observed value of residual deviance.</span>
 ## glm(formula = am ~ disp, family = binomial, data = mtcars)
 ## 
 ## Coefficients:
-##              Estimate Std. Error z value Pr(&gt;|z|)
-## (Intercept)  2.630849   1.050170   2.505  0.01224
-## disp        -0.014604   0.005168  -2.826  0.00471
-##               
-## (Intercept) * 
-## disp        **
+##              Estimate Std. Error z value Pr(&gt;|z|)   
+## (Intercept)  2.630849   1.050170   2.505  0.01224 * 
+## disp        -0.014604   0.005168  -2.826  0.00471 **
 ## ---
-## Signif. codes:  
-## 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
@@ -1199,7 +1194,8 @@ themes are possible, see ?theme_ in your Console.</span> </span></p>
 </div>
 <p></a></p>
 <div id="Logisticggplot2" style="display:none;">
-<pre><code>## `geom_smooth()` using formula = &#39;y ~ x&#39;</code></pre>
+<pre><code>## `geom_smooth()` using formula
+## = &#39;y ~ x&#39;</code></pre>
 <p><img src="LogisticRegression_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 </div>
 </p>
@@ -2005,11 +2001,9 @@ you are interested.</span> </span></p>
 </div>
 <p></a></p>
 <div id="goodnessoffit2" style="display:none;">
-<pre><code>## Warning: glm.fit: fitted probabilities
-## numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
 <pre><code>## 
-##  Hosmer and Lemeshow goodness of fit (GOF)
-##  test
+##  Hosmer and Lemeshow goodness of fit (GOF) test
 ## 
 ## data:  myglm$y, myglm$fitted
 ## X-squared = 18.212, df = 8, p-value = 0.0197</code></pre>
@@ -2053,27 +2047,17 @@ more extreme than the observed value of residual deviance.</span>
 ##     data = ChickWeight)
 ## 
 ## Coefficients:
-##               Estimate Std. Error z value
-## (Intercept)   -4.97603    0.65316  -7.618
-## Time           0.39111    0.04979   7.854
-## Diet2          0.58283    1.04061   0.560
-## Diet3         -8.44476    4.32324  -1.953
-## Diet4        -67.41995 3768.10023  -0.018
-## Time:Diet2     0.02391    0.08679   0.275
-## Time:Diet3     1.20955    0.51249   2.360
-## Time:Diet4     8.83168  471.01259   0.019
-##             Pr(&gt;|z|)    
-## (Intercept) 2.57e-14 ***
-## Time        4.02e-15 ***
-## Diet2         0.5754    
-## Diet3         0.0508 .  
-## Diet4         0.9857    
-## Time:Diet2    0.7830    
-## Time:Diet3    0.0183 *  
-## Time:Diet4    0.9850    
+##               Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)   -4.97603    0.65316  -7.618 2.57e-14 ***
+## Time           0.39111    0.04979   7.854 4.02e-15 ***
+## Diet2          0.58283    1.04061   0.560   0.5754    
+## Diet3         -8.44476    4.32324  -1.953   0.0508 .  
+## Diet4        -67.41995 3768.10023  -0.018   0.9857    
+## Time:Diet2     0.02391    0.08679   0.275   0.7830    
+## Time:Diet3     1.20955    0.51249   2.360   0.0183 *  
+## Time:Diet4     8.83168  471.01259   0.019   0.9850    
 ## ---
-## Signif. codes:  
-## 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
@@ -2273,7 +2257,8 @@ class="tooltiprtext">Add a black and white them to the plot.</span>
 <span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="fu">stat_smooth</span>(<span class="fu">aes</span>(<span class="at">color =</span> Diet), <span class="at">method =</span> <span class="st">&quot;glm&quot;</span>, <span class="at">method.args =</span> <span class="fu">list</span>(<span class="at">family =</span> <span class="st">&quot;binomial&quot;</span>), <span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
 <span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
 <span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&quot;weight&gt;100&quot;</span>)</span></code></pre></div>
-<pre><code>## `geom_smooth()` using formula = &#39;y ~ x&#39;</code></pre>
+<pre><code>## `geom_smooth()` using formula
+## = &#39;y ~ x&#39;</code></pre>
 <p><img src="LogisticRegression_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 </div>
 </p>
