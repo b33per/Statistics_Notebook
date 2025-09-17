@@ -703,26 +703,21 @@ datatable(Orange)
 
 <br>
 
-```{r}
-orangelm <- lm(circumference ~ age, data=Orange)
+`orangelm <- lm(circumference ~ age, data=Orange)
 
-summary(orangelm)%>%pander()
-```
+summary(orangelm)%>%pander()`
 
 
 $$\hat{Y_i} = 17.40 + 0.106770 X_i$$
 
 
-```{r message=FALSE, warning=FALSE}
-ggplot(Orange, aes(x = age, y = circumference))+
+`ggplot(Orange, aes(x = age, y = circumference))+
   geom_point(color = "orange") +
   geom_smooth(method = "lm", formula = y~x, se = FALSE, color = "chocolate")+
-  theme_minimal()
-```
+  theme_minimal()`
 
 
-```{r}
-SSE <- round(sum(residuals(orangelm)^2), 2)
+`SSE <- round(sum(residuals(orangelm)^2), 2)
 
 SSR <- round(sum((fitted(orangelm)- mean(Orange$circumference))^2), 2)
 
@@ -739,12 +734,9 @@ cat("SSE:", SSE, "\n")
 cat("SSR:", SSR, "\n")
 cat("SSTO:", SSTO, "\n")
 cat("R-squared (R2):", R2, "\n")
-cat("Correlation (r):", correlation, "\n")
-```
+cat("Correlation (r):", correlation, "\n")`
 
-```{r}
-predict(orangelm, data.frame(age=1095, interval="prediction"))
-```
+`predict(orangelm, data.frame(age=1095, interval="prediction"))`
 
 
 <br>
@@ -1515,16 +1507,13 @@ Perform a regression that explains the **circumference** of the trunk of the ora
 
 Plot the data and fitted simple linear regression line.
 
-```{r message=FALSE, warning=FALSE}
-ilikeapples <- lm(circumference ~ age, data=Orange)
+`ilikeapples <- lm(circumference ~ age, data=Orange)
 
 ggplot(Orange, aes(x= age, y= circumference))+
   geom_point(size = 1.5, shape = 19, color = "orange", alpha = 1.5) +
   geom_smooth(method = "lm", formula = y~x, se= FALSE, color = "grey") +
   labs(title = "Growth of Orange Trees", x = "Age of Tree in Days", y = "Circumference of Tree(mm)")+ 
-  theme_classic()
-
-```
+  theme_classic()`
 
 
 <br>
@@ -1536,9 +1525,7 @@ State the estimated values for $\beta_0$, $\beta_1$, and $\sigma$ for this regre
 
 
 
-```{r}
-summary(ilikeapples)%>%pander()
-```
+`summary(ilikeapples)%>%pander()`
 
 
 
@@ -1551,15 +1538,13 @@ Create a residuals vs fitted-values plot and a Q-Q Plot of the residuals for thi
 
 
 
-```{r}
-par(mfrow=c(1,3))
+`par(mfrow=c(1,3))
 
 plot(ilikeapples, which=1)
 
 qqPlot(ilikeapples$residuals, main="Q-Q Plot", col.lines="blue",pch= 19, id=FALSE)
 
-plot(ilikeapples$residuals, ylab= "Residuals", main="Residuals vs Order")
-```
+plot(ilikeapples$residuals, ylab= "Residuals", main="Residuals vs Order")`
 
 
 
@@ -1589,9 +1574,7 @@ Comment on which estimates of Part (b) are likely effected by these difficulties
 Perform a Box-Cox analysis of the regression. Which Y-transformation is suggested?
 
 
-```{r message=FALSE, warning=FALSE}
-boxCox(ilikeapples)
-```
+`boxCox(ilikeapples)`
 
 - The suggested y-transformation is **0.5**
   - you will sqrt()!
@@ -1604,8 +1587,7 @@ boxCox(ilikeapples)
 Perform a regression with the transformed y-variable. Plot the regression in the transformed units. Diagnose the fit of the regression on the transformed data.
 
 
-```{r message=FALSE, warning=FALSE}
-notmyapples <- lm(sqrt(circumference) ~ age, data=Orange)
+`notmyapples <- lm(sqrt(circumference) ~ age, data=Orange)
 b.sqrt <- notmyapples$coef
 
 ggplot(Orange, aes(x= age, y= sqrt(circumference)))+
@@ -1620,8 +1602,7 @@ plot(notmyapples, which=1)
 
 qqPlot(notmyapples$residuals, main="Q-Q Plot", col.lines="blue",pch= 19, id=FALSE)
 
-plot(notmyapples$residuals, ylab= "Residuals", main="Residuals vs Order")
-```
+plot(notmyapples$residuals, ylab= "Residuals", main="Residuals vs Order")`
 
 
 
@@ -1668,13 +1649,11 @@ $\hat{Y_i} = $
 Plot the data in the original units. Place the transformed line, back in the original units, on this plot. 
 
 
-```{r}
-plot(circumference ~ age, data=Orange, pch=16, col="orangered", main="Growth of Orange Trees", xlab="Age of Tree in Days", ylab="Circumference of Tree (mm)")
+`plot(circumference ~ age, data=Orange, pch=16, col="orangered", main="Growth of Orange Trees", xlab="Age of Tree in Days", ylab="Circumference of Tree (mm)")
 
 abline(ilikeapples, col= "gray")
 
-curve( (b.sqrt[1] + b.sqrt[2]*x)^2 , add=TRUE, col="orangered")
-```
+curve( (b.sqrt[1] + b.sqrt[2]*x)^2 , add=TRUE, col="orangered")`
 
 
 
@@ -1733,12 +1712,10 @@ abline(kachow)
 
 **ggplot Version:**
 
-```{r message=FALSE, warning=FALSE}
-ggplot(Orange, aes(x=age, y=circumference)) +
+`ggplot(Orange, aes(x=age, y=circumference)) +
   geom_point(color = "orangered") +
   stat_function(fun=function(x)(b.scoop[1] + b.scoop[2]*x)^2, color= "yellow") +
-  theme_classic()
-```
+  theme_classic()`
 
 
 
@@ -1828,8 +1805,7 @@ ggplot(Orange, aes(x=age, y=circumference)) +
 
 1. Base Graphic
 
-```{r}
-lm.log <- lm(log(circumference) ~ age, data=Orange)
+`lm.log <- lm(log(circumference) ~ age, data=Orange)
 b.log <- coef(lm.log)
 
 lm.sqrt <-lm(sqrt(circumference) ~ age, data=Orange)
@@ -1860,15 +1836,13 @@ curve( b.y[1] + b.y[2]*x , add=TRUE, col=4)
 
 curve( sqrt(b.2[1] + b.2[2]*x) , add=TRUE, col=5)
 
-curve( (b.ss[1] + b.ss[2]*x)^4 , add=TRUE, col=6)
-```
+curve( (b.ss[1] + b.ss[2]*x)^4 , add=TRUE, col=6)`
 
 <br>
 
 2. ggplot Graphic
 
-```{r message=FALSE, warning=FALSE}
-ggplot(Orange, aes(x=age, y=circumference)) + 
+`ggplot(Orange, aes(x=age, y=circumference)) + 
   geom_point(color="orangered") +
   stat_function(fun=function(x) exp(b.log[1] + b.log[2]*x), aes(color="log(y)")) + 
   stat_function(fun=function(x) (b.sqrt[1] + b.sqrt[2]*x)^2, aes(color="sqrt(y)")) + 
@@ -1877,8 +1851,7 @@ ggplot(Orange, aes(x=age, y=circumference)) +
   stat_function(fun=function(x) sqrt(b.2[1] + b.2[2]*x), aes(color="y^2")) + 
   stat_function(fun=function(x) (b.ss[1] + b.ss[2]*x)^4, aes(color="sqrt(sqrt(y))")) + 
   labs(title="Growth of Orange Trees", x="Age of Tree in Days", y="Circumference of Tree (mm)") + 
-  theme_bw( )
-```
+  theme_bw( )`
 
 <br>
 
@@ -1890,8 +1863,7 @@ ggplot(Orange, aes(x=age, y=circumference)) +
   5) A regression of $Y_i' = Y_i^2$
   6) A regression of $Y_i' =$ some transformation of Y that you think will work better than any of the others currently showing on the plot.
 
-```{r}
-lm.log <- lm(log(circumference) ~ age, data=Orange)
+`lm.log <- lm(log(circumference) ~ age, data=Orange)
 b.log <- coef(lm.log)
 
 lm.sqrt <-lm(sqrt(circumference) ~ age, data=Orange)
@@ -1907,15 +1879,13 @@ lm.2 <- lm(circumference^2 ~ age, data=Orange)
 b.2 <- coef(lm.2)
 
 lm.ss <- lm(sqrt(sqrt(circumference)) ~ age, data=Orange)
-b.ss <- coef(lm.ss)
-
-```
+b.ss <- coef(lm.ss)`
 
 <br>
 
-```{r}
-boxCox(lm.y)
-```
+
+`boxCox(lm.y)`
+
 
 <br>
 
@@ -1944,8 +1914,7 @@ Predictions outside of the x-axis range of your data can be **especially dangero
 - To see this, refit each of your six regressions from above on a reduced version of the Orange data called "YoungOrange" that keeps only age < 1200.
 - Then, draw each of these six regressions on a new version of the scatterplot from the Instructions (above). The scatterplot should show the full data set. But the regressions will be based on just the trees aged 0 - 1200 days.
 
-```{r}
-YoungOrange <- Orange %>%
+`YoungOrange <- Orange %>%
   filter(age < 1200)
 
 
@@ -1965,14 +1934,12 @@ lm.2 <- lm(circumference^2 ~ age, data=YoungOrange)
 b.2 <- coef(lm.2)
 
 lm.ss <- lm(sqrt(sqrt(circumference)) ~ age, data=YoungOrange)
-b.ss <- coef(lm.ss)
-```
+b.ss <- coef(lm.ss)`
 
 
 - Another ggplot Graphic
 
-```{r message=FALSE, warning=FALSE}
-ggplot(Orange, aes(x=age, y=circumference)) + 
+`ggplot(Orange, aes(x=age, y=circumference)) + 
   geom_point(color="orangered") +
   stat_function(fun=function(x) exp(b.log[1] + b.log[2]*x), aes(color="log(y)")) + 
   stat_function(fun=function(x) (b.sqrt[1] + b.sqrt[2]*x)^2, aes(color="sqrt(y)")) + 
@@ -1982,8 +1949,7 @@ ggplot(Orange, aes(x=age, y=circumference)) +
   stat_function(fun=function(x) (b.ss[1] + b.ss[2]*x)^4, aes(color="sqrt(sqrt(y))")) + 
   ylim(c(0,400))+
   labs(title="Growth of Orange Trees", x="Age of Tree in Days", y="Circumference of Tree (mm)") + 
-  theme_bw( )
-```
+  theme_bw( )`
 
 
 <br>

@@ -34,6 +34,12 @@ output:
 
 ***
 
+### Textbook 
+
+[Math 326 Notebook Link Here!](https://byuistats.github.io/Math326_Quarto4/)
+
+***
+
 ### Cheat Sheets
 
 * [R Colors](http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf)
@@ -150,10 +156,8 @@ There are three parts to the help box:
 
 <br>
 
-<center>
-
 OoOoooOOOoo let's go assignments!!
-</div>
+
 
 
 <br>
@@ -177,11 +181,102 @@ As well as some personal notes on those assignments!
 
 <br>
 
+***
 
-We were setting up RStudio and doing cool little graphic thingys! 
+#### Class Activity - Introduction to Basic Principles
+
+**The 8 Key Principles of Experimental Design**
+
+1. Understand the objectives of your research. What questions should be answered?
+2. Determine the measurements that will be needed to help answer the questions of interest.
+3. Determine which variables, which we will call factors, are the sources of variation in the measurements. Determine which of these factors you will be testing and decide which levels of those factors will be included in the study. Determine which of these factors you will hold constant.
+4. Determine how sampling and treatment assignments will be done and then collect the data.
+5. Identify the analysis technique that will be applied, including how to test hypotheses
+6. Describe the data using numerical and graphical summaries.
+7. Perform the analysis and make sure that the analysis is appropriate.
+8. Make conclusions.
 
 <br>
 
-***
 
-#### Skill Quiz - Introduction to R 
+**Observational studies**: the researchers do not control the conditions of the study
+
+**Designed experiments**: are studies in which the researchers control the conditions in which the study is performed
+
+<br>
+
+**5 Research Objectives**
+
+1. Specific : 
+
+2. Measurable
+
+3. Achievable
+
+4. Relevant
+
+5. Time-based 
+
+<br>
+
+**4 Types of Measurement Scales:**
+
+1. Nominal :  have no quantitative value and have no particular order. Gender and color are examples of nominal measurements
+  - ex. gender and color
+
+2. Ordinal : similar to the nominal variable, except that the categories fall in a significant and meaningful order
+  - ex. rating on a good, great, bad scale
+
+3. Interval : measurements are quantitative with a meaningful notion of distance between values, however zero does not have a true zero value
+  - Ex. temperature measured in Fahrenheit or time measured in minutes
+
+4. Ratio : measurements are also quantitative with a meaningful notion of distance between values and zero does have a true zero value
+ - Ex. distance, length, weight, height
+
+
+<br>
+
+**Validity vs. Reliability**
+
+
+Validity: the degree a study or a measure actually represents what it claims to represent
+- ex. if the response varible for an experiement was a person's arithmetic skills we would need to carefully decide how that could be meausred
+
+Reliability: the measure will give the same value as a reponse if it is used in identical conditions
+- ex. meausring hand length in the same measurement unit
+
+<br>
+
+**Experiemental Units vs. Oberservation Units**
+
+Experimental Units: 
+
+Observational Units: 
+
+
+<br>
+
+**Example Scenario**
+
+City leaders in a large city want to determine the most effective way to lower crime that occurs in the many city parks. They decide to test the effects of increased police patrols and increased lighting.
+
+*The 8 Key Principles Application:*
+
+1. What question do we want to answer?
+- How is the amount of crime that occurs effected my police partols and increased lighting?
+
+2. What measurements are we gonna take?
+  - Crime citizens have reported (not police)
+
+3. What factors can affect the measurements?
+  - Lightening and Police Patrol
+
+4. How would you sample this data?
+  - Filming, taking shifts looking around for crime (not a smart idea)
+
+5. What kind of analysis?
+  - Two way ANOVA (two factors)
+
+*6, 7, and 8 can be done with actual data!*
+
+
